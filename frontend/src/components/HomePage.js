@@ -6,14 +6,19 @@ function HomePage({ onLogin }) {
   const [name, setName] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/users').then(res => setUsers(res.data));
+    axios.get('/users').then(res => setUsers(res.data));
   }, []);
 
-  const createUser = () => {
-    axios.post('http://localhost:5000/users', { name }).then(res => {
+const createUser = () => {
+  axios.post('/users', { name })
+    .then(res => {
+      console.log("✅ Created user:", res.data);
       onLogin(res.data);
+    })
+    .catch(err => {
+      console.error("❌ Error creating user:", err);
     });
-  };
+};
 
   return (
     <div style={{ padding: '2rem' }}>

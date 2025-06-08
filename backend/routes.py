@@ -4,12 +4,15 @@ from openai import OpenAI
 import csv
 from io import StringIO
 import re
+from dotenv import load_dotenv
+from flask_cors import cross_origin
 
 from models import db, User, Module, Sentence, Error
 
 api_blueprint = Blueprint('api', __name__)
 
-client = OpenAI()
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # hardcoded modules
 MODULES = {
@@ -18,7 +21,8 @@ MODULES = {
 }
 
 
-@api_blueprint.route('/users', methods=['GET', 'POST'])
+@api_blueprint.route('/users', methods=['GET', 'POST', 'OPTIONS'])
+@cross_origin(origin='http://localhost:3000')
 def users():
     if request.method == 'POST':
         name = request.json.get('name')
