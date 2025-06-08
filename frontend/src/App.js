@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import HomePage from './components/HomePage';
 import LanguageSelector from './components/LanguageSelector';
 import ModuleScreen from './components/ModuleScreen';
@@ -13,9 +12,14 @@ function App() {
   const [module, setModule] = useState('');
   const [screen, setScreen] = useState('home');
 
+  const login = (selectedUser) => {
+    setUser(selectedUser);
+    setScreen('select-language');
+  };
+
   switch (screen) {
     case 'home':
-      return <HomePage onLogin={setUser} />;
+      return <HomePage onLogin={login} />;
     case 'select-language':
       return <LanguageSelector onSelect={setLanguage} next={() => setScreen('module')} />;
     case 'module':
