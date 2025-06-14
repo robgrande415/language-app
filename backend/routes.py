@@ -229,3 +229,34 @@ def export_session(user_id):
         as_attachment=True,
         download_name="session.csv",
     )
+
+
+@api_blueprint.route("/session/<int:user_id>/errors", methods=["GET"])
+def export_errors(user_id):
+    errors = (
+        db.session.query(Error, Sentence.timestamp, Module.name)
+        .join(Sentence, Error.sentence_id == Sentence.id)
+        .join(Module, Error.module_id == Module.id)
+        .filter(Sentence.user_id == user_id)
+        .all()
+    )
+
+    string_data = StringIO()
+    writer = csv.writer(string_data)
+    writer.writerow([
+        "timestamp",
+        "module",
+        "error_text",
+    ])
+    for err, ts, module_name in errors:
+        writer.writerow([ts, module_name, err.error_text])
+    string_data.seek(0)
+
+    bytes_data = BytesIO(string_data.getvalue().encode("utf-8"))
+
+    return send_file(
+        bytes_data,
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="errors.csv",
+    )

@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-function ModuleScreen({ user, language, cefr, setCefr, setModule, next }) {
+function ModuleScreen({
+  user,
+  language,
+  cefr,
+  setCefr,
+  setModule,
+  questionCount,
+  setQuestionCount,
+  next,
+}) {
   const [modules, setModules] = useState([]);
   const [search, setSearch] = useState("");
 
@@ -36,6 +45,17 @@ function ModuleScreen({ user, language, cefr, setCefr, setModule, next }) {
             {lvl}
           </label>
         ))}
+      </div>
+      <div style={{ margin: "1rem 0" }}>
+        <label>
+          Number of questions: {" "}
+          <input
+            type="number"
+            min="1"
+            value={questionCount}
+            onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
+          />
+        </label>
       </div>
       <input
         value={search}

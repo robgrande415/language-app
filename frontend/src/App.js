@@ -10,6 +10,7 @@ function App() {
   const [language, setLanguage] = useState("");
   const [cefr, setCefr] = useState("A1");
   const [module, setModule] = useState("");
+  const [questionCount, setQuestionCount] = useState(5);
   const [screen, setScreen] = useState("home");
 
   const login = (selectedUser) => {
@@ -35,6 +36,8 @@ function App() {
           cefr={cefr}
           setCefr={setCefr}
           setModule={setModule}
+          questionCount={questionCount}
+          setQuestionCount={setQuestionCount}
           next={() => setScreen("practice")}
         />
       );
@@ -45,6 +48,7 @@ function App() {
           language={language}
           cefr={cefr}
           module={module}
+          questionCount={questionCount}
           onComplete={() => setScreen("summary")}
         />
       );

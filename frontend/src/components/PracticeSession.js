@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function PracticeSession({ user, language, cefr, module, onComplete }) {
+function PracticeSession({ user, language, cefr, module, questionCount, onComplete }) {
   const [sentence, setSentence] = useState('');
   const [answer, setAnswer] = useState('');
   const [response, setResponse] = useState('');
   const [count, setCount] = useState(0);
+  const [stage, setStage] = useState('question'); // 'question' or 'result'
 
   useEffect(() => {
     fetchSentence();
@@ -13,7 +14,10 @@ function PracticeSession({ user, language, cefr, module, onComplete }) {
 
   const fetchSentence = () => {
     axios.post('/sentence/generate', { language, cefr, module })
-      .then(res => setSentence(res.data.sentence));
+      .then(res => {
+        setSentence(res.data.sentence);
+        setStage('question');
+      });
   };
 
   const submit = () => {
@@ -27,22 +31,37 @@ function PracticeSession({ user, language, cefr, module, onComplete }) {
     }).then(res => {
       setResponse(res.data.response);
       setCount(c => c + 1);
-      if (count + 1 >= 2) {
-        onComplete();
-      } else {
-        fetchSentence();
-      }
+      setStage('result');
     });
+  };
+
+  const nextStep = () => {
+    if (count >= questionCount) {
+      onComplete();
+    } else {
+      setAnswer('');
+      setResponse('');
+      fetchSentence();
+    }
   };
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h3>Translate:</h3>
-      <p>{sentence}</p>
-      <input value={answer} onChange={e => setAnswer(e.target.value)} />
-      <button onClick={submit}>Submit</button>
-      <pre>{response}</pre>
-      <div>Progress: {count}/5</div>
+      {stage === 'question' && (
+        <>
+          <h3>Translate:</h3>
+          <p>{sentence}</p>
+          <input value={answer} onChange={e => setAnswer(e.target.value)} />
+          <button onClick={submit}>Submit</button>
+        </>
+      )}
+      {stage === 'result' && (
+        <>
+          <pre>{response}</pre>
+          <button onClick={nextStep}>Next</button>
+        </>
+      )}
+      <div>Progress: {count}/{questionCount}</div>
     </div>
   );
 }
