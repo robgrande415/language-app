@@ -12,12 +12,12 @@ function PracticeSession({ user, language, cefr, module, onComplete }) {
   }, []);
 
   const fetchSentence = () => {
-    axios.post('http://localhost:5000/sentence/generate', { language, cefr, module })
+    axios.post('/sentence/generate', { language, cefr, module })
       .then(res => setSentence(res.data.sentence));
   };
 
   const submit = () => {
-    axios.post('http://localhost:5000/sentence/submit', {
+    axios.post('/sentence/submit', {
       user_id: user.id,
       language,
       cefr,

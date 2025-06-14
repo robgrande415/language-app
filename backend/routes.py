@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, request, jsonify, send_file
 from openai import OpenAI
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
 import re
 from dotenv import load_dotenv
 from flask_cors import cross_origin
@@ -41,7 +41,7 @@ def modules(language):
 
 def generate_sentence_prompt(cefr, target_language, module):
     return (
-        f"Generate a sentence in English for a student at the {cefr} level to translate into {target_language}. "
+        f"Generate a sentence in English for a student at the {cefr} level to translate into {target_language}. Randomize the topic."
         f"The sentence in {target_language} should cover the topic of: {module}."
     )
 
@@ -85,13 +85,13 @@ def submit_sentence():
     db.session.commit()
 
     prompt = (
-        "Correct this translation in the format:\n"
+        "Correct the translation in the following format. Focus on word and grammar issues. Do not add list of corrections for spelling mistakes:\n"
         "<user submitted sentence>\n"
         "<corrected sentence with corrections in **boldface**>\n"
         "<list of corrections with explanations, newline delimited>"
     )
     prompt = f"{prompt}"
-    user_message = f"{translation}\n{english}"
+    user_message = f"Original English: {english}. Target language translation to be corrected: {translation}."
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt + "\n" + user_message}],
@@ -134,8 +134,10 @@ def followup():
 @api_blueprint.route('/session/<int:user_id>/export', methods=['GET'])
 def export_session(user_id):
     sentences = Sentence.query.filter_by(user_id=user_id).all()
-    csv_data = StringIO()
-    writer = csv.writer(csv_data)
+
+    # Write CSV to string
+    string_data = StringIO()
+    writer = csv.writer(string_data)
     writer.writerow(['timestamp', 'english', 'submitted', 'corrected', 'explanation', 'module', 'language', 'cefr'])
     for s in sentences:
         explanation = s.openai_response.replace('\n', ' ')
@@ -149,9 +151,13 @@ def export_session(user_id):
             s.module.language,
             s.cefr_level,
         ])
-    csv_data.seek(0)
+    string_data.seek(0)
+
+    # Convert to binary for send_file
+    bytes_data = BytesIO(string_data.getvalue().encode('utf-8'))
+
     return send_file(
-        csv_data,
+        bytes_data,
         mimetype='text/csv',
         as_attachment=True,
         download_name='session.csv',

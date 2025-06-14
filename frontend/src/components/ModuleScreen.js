@@ -7,7 +7,7 @@ function ModuleScreen({ language, cefr, setCefr, setModule, next }) {
 
   useEffect(() => {
     if (language) {
-      axios.get(`http://localhost:5000/modules/${language}`).then(res => setModules(res.data));
+      axios.get(`/modules/${language}`).then(res => setModules(res.data));
     }
   }, [language]);
 
