@@ -48,12 +48,22 @@ function ModuleScreen({
       </div>
       <div style={{ margin: "1rem 0" }}>
         <label>
-          Number of questions: {" "}
+          Number of questions:{" "}
           <input
             type="number"
             min="1"
-            value={questionCount}
-            onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
+            value={questionCount === null ? "" : questionCount}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "") {
+                setQuestionCount(null); // allow clearing
+              } else {
+                const parsed = parseInt(value);
+                if (!isNaN(parsed)) {
+                  setQuestionCount(parsed);
+                }
+              }
+            }}
           />
         </label>
       </div>

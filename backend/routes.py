@@ -67,7 +67,7 @@ def generate_sentence_batch(cefr, target_language, module):
     lines = [
         re.sub(r"^\d+[\).]\s*", "", l).strip() for l in text.splitlines() if l.strip()
     ]
-    unique_lines = list(dict.fromkeys(lines))
+    unique_lines = list(dict.fromkeys(lines[1:-1])) # remove chatgpt filler
     random.shuffle(unique_lines)
     return unique_lines[:5]
 
