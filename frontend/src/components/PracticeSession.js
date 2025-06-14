@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function PracticeSession({ user, language, cefr, module, questionCount, onComplete }) {
+function PracticeSession({ user, language, cefr, module, questionCount, onComplete, home }) {
   const [sentence, setSentence] = useState('');
   const [answer, setAnswer] = useState('');
   const [response, setResponse] = useState('');
@@ -62,6 +62,9 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
         </>
       )}
       <div>Progress: {count}/{questionCount}</div>
+      <div style={{ marginTop: '1rem' }}>
+        <button onClick={home}>Home</button>
+      </div>
     </div>
   );
 }

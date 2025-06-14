@@ -260,3 +260,49 @@ def export_errors(user_id):
         as_attachment=True,
         download_name="errors.csv",
     )
+
+@api_blueprint.route("/personalized/topics", methods=["POST"])
+def personalized_topics():
+    data = request.json
+    user_id = data.get("user_id")
+    language = data.get("language")
+    errors = (
+        db.session.query(Error.error_text)
+        .join(Sentence, Error.sentence_id == Sentence.id)
+        .join(Module, Error.module_id == Module.id)
+        .filter(Sentence.user_id == user_id, Module.language == language)
+        .order_by(Sentence.timestamp.desc())
+        .limit(20)
+        .all()
+    )
+    texts = [e[0] for e in errors]
+    if not texts:
+        return jsonify({"topics": []})
+    prompt = "Here are some student errors:\n" + "\n".join(texts) + "\nSummarize the 5 most common error topics as a numbered list."
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    lines = [re.sub(r"^\d+[\).]\s*", "", l).strip() for l in response.choices[0].message.content.strip().splitlines() if l.strip()]
+    return jsonify({"topics": lines[:5]})
+
+
+@api_blueprint.route("/personalized/preload", methods=["POST"])
+def personalized_preload():
+    data = request.json
+    topics = data.get("topics", [])
+    language = data.get("language")
+    cefr = data.get("cefr")
+    prompt = (
+        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {language}. "
+        f"The sentences should help practice the following topics: {', '.join(topics)}. Number each sentence."
+    )
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    lines = [re.sub(r"^\d+[\).]\s*", "", l).strip() for l in response.choices[0].message.content.strip().splitlines() if l.strip()]
+    random.shuffle(lines)
+    key = (language, "personalized", cefr)
+    SENTENCE_BATCHES[key] = lines[:20]
+    return jsonify({"count": len(SENTENCE_BATCHES[key])})

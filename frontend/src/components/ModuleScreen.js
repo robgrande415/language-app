@@ -10,6 +10,8 @@ function ModuleScreen({
   questionCount,
   setQuestionCount,
   next,
+  startPersonalized,
+  home,
 }) {
   const [modules, setModules] = useState([]);
   const [search, setSearch] = useState("");
@@ -29,6 +31,14 @@ function ModuleScreen({
     axios
       .post("/sentence/preload", { language, cefr, module: m })
       .then(() => next());
+  };
+
+  const personalized = () => {
+    axios
+      .post('/personalized/topics', { user_id: user.id, language })
+      .then(res => {
+        startPersonalized(res.data.topics || []);
+      });
   };
 
   return (
@@ -79,6 +89,12 @@ function ModuleScreen({
           </li>
         ))}
       </ul>
+      <div style={{ marginTop: "1rem" }}>
+        <button onClick={personalized} style={{ marginRight: "1rem" }}>
+          Personalized Module based on Past errors
+        </button>
+        <button onClick={home}>Home</button>
+      </div>
     </div>
   );
 }
