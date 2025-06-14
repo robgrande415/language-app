@@ -27,7 +27,7 @@ function PracticeSession({ user, language, cefr, module, onComplete }) {
     }).then(res => {
       setResponse(res.data.response);
       setCount(c => c + 1);
-      if (count + 1 >= 5) {
+      if (count + 1 >= 2) {
         onComplete();
       } else {
         fetchSentence();
