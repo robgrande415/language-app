@@ -60,7 +60,7 @@ def generate_batch_prompt(cefr, target_language, module):
 def generate_sentence_batch(cefr, target_language, module):
     prompt = generate_batch_prompt(cefr, target_language, module)
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
     )
     text = response.choices[0].message.content.strip()
@@ -121,17 +121,33 @@ def submit_sentence():
     db.session.add(sentence)
     db.session.commit()
 
-    prompt = (
+    prompt_old = (
         "Correct the translation in the following format. Focus on word and grammar issues. Do not add list of corrections for spelling mistakes:\n"
-        "<user submitted sentence>\n"
-        "<corrected sentence with corrections in **boldface**>\n"
+        "<corrected sentence with only the corrections in **boldface**>\n"
         "<list of corrections with explanations, newline delimited>"
+        ""
+        #"Ex. "
     )
+    prompt = (
+        "Correct these, ignoring spelling errors.\n"
+        "Respond in the format: \n"
+        "<original french sentence> \n"
+        "<correct french sentence with only the corrections in bold>\n"
+        "<list of corrections with quick explanations, newline delimited>"
+        "\n"
+        "Ex. Our technical team is developing a secure digital portal for the bank’s lending services. - Notre equipe technique est en train de développer un interface digital securisé pour les services de prêt de la banque\n"
+        "\n"
+        "Notre equipe technique est en train de développer *une* interface *numérique* *sécurisée* pour les services de prêt de la banque\n"
+        "Explanation:\n"
+        "interface is feminine → une \n"
+        "digital → numérique is preferred in formal/technical French\n"
+        "securisé → sécurisée for feminine agreement"
+        )
     prompt = f"{prompt}"
-    user_message = f"Original English: {english}. Target language translation to be corrected: {translation}."
+    user_message = f"{english} - {translation}."
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt + "\n" + user_message}],
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt + "\n New submission \n" + user_message}],
     )
     text = response.choices[0].message.content.strip()
     sentence.openai_response = text
@@ -161,7 +177,7 @@ def followup():
         f"The sentence should cover the topic of: {module}."
     )
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
     )
     text = response.choices[0].message.content.strip()
