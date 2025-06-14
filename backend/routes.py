@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, current_app
 from openai import OpenAI
 import csv
 from io import StringIO, BytesIO
@@ -59,9 +59,13 @@ def generate_batch_prompt(cefr, target_language, module):
 
 def generate_sentence_batch(cefr, target_language, module):
     prompt = generate_batch_prompt(cefr, target_language, module)
+    current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     text = response.choices[0].message.content.strip()
     lines = [
@@ -145,9 +149,14 @@ def submit_sentence():
         )
     prompt = f"{prompt}"
     user_message = f"{english} - {translation}."
+    full_prompt = prompt + "\n New submission \n" + user_message
+    current_app.logger.info("OpenAI prompt: %s", full_prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
-        messages=[{"role": "user", "content": prompt + "\n New submission \n" + user_message}],
+        messages=[{"role": "user", "content": full_prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     text = response.choices[0].message.content.strip()
     sentence.openai_response = text
@@ -177,9 +186,13 @@ def followup():
         f"Focus on the following error: {error_text}."
         f"The sentence should cover the topic of: {module}."
     )
+    current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     text = response.choices[0].message.content.strip()
     return jsonify({"sentence": text})
@@ -279,9 +292,13 @@ def personalized_topics():
     if not texts:
         return jsonify({"topics": []})
     prompt = "Here are some student errors:\n" + "\n".join(texts) + "\nSummarize the 5 most common error topics as a numbered list."
+    current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     lines = [re.sub(r"^\d+[\).]\s*", "", l).strip() for l in response.choices[0].message.content.strip().splitlines() if l.strip()]
     return jsonify({"topics": lines[:5]})
@@ -297,9 +314,13 @@ def personalized_preload():
         f"Generate 20 short English sentences for a student at the {cefr} level to translate into {language}. "
         f"The sentences should help practice the following topics: {', '.join(topics)}. Number each sentence."
     )
+    current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     lines = [re.sub(r"^\d+[\).]\s*", "", l).strip() for l in response.choices[0].message.content.strip().splitlines() if l.strip()]
     random.shuffle(lines)
