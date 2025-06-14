@@ -4,37 +4,41 @@ from openai import OpenAI
 import csv
 from io import StringIO, BytesIO
 import re
+import random
 from dotenv import load_dotenv
 from flask_cors import cross_origin
 
 from models import db, User, Module, Sentence, Error
 
-api_blueprint = Blueprint('api', __name__)
+api_blueprint = Blueprint("api", __name__)
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # hardcoded modules
 MODULES = {
-    'French': ['Simple present tense', 'Imperfect', 'Prepositions'],
-    'Spanish': ['Ser vs Estar', 'Nouns', 'Preterite'],
+    "French": ["Simple present tense", "Imperfect", "Prepositions"],
+    "Spanish": ["Ser vs Estar", "Nouns", "Preterite"],
 }
 
+# cache of pre-generated sentences per (language, module, cefr)
+SENTENCE_BATCHES = {}
 
-@api_blueprint.route('/users', methods=['GET', 'POST', 'OPTIONS'])
-@cross_origin(origin='http://localhost:3000')
+
+@api_blueprint.route("/users", methods=["GET", "POST", "OPTIONS"])
+@cross_origin(origin="http://localhost:3000")
 def users():
-    if request.method == 'POST':
-        name = request.json.get('name')
+    if request.method == "POST":
+        name = request.json.get("name")
         user = User(name=name)
         db.session.add(user)
         db.session.commit()
-        return jsonify({'id': user.id, 'name': user.name})
+        return jsonify({"id": user.id, "name": user.name})
     users = User.query.all()
-    return jsonify([{'id': u.id, 'name': u.name} for u in users])
+    return jsonify([{"id": u.id, "name": u.name} for u in users])
 
 
-@api_blueprint.route('/modules/<language>', methods=['GET'])
+@api_blueprint.route("/modules/<language>", methods=["GET"])
 def modules(language):
     return jsonify(MODULES.get(language, []))
 
@@ -46,27 +50,60 @@ def generate_sentence_prompt(cefr, target_language, module):
     )
 
 
-@api_blueprint.route('/sentence/generate', methods=['POST'])
-def generate_sentence():
-    data = request.json
-    prompt = generate_sentence_prompt(data['cefr'], data['language'], data['module'])
+def generate_batch_prompt(cefr, target_language, module):
+    return (
+        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. "
+        f"The sentences should cover the topic of: {module}. Number each sentence."
+    )
+
+
+def generate_sentence_batch(cefr, target_language, module):
+    prompt = generate_batch_prompt(cefr, target_language, module)
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
     )
     text = response.choices[0].message.content.strip()
-    return jsonify({'sentence': text})
+    lines = [
+        re.sub(r"^\d+[\).]\s*", "", l).strip() for l in text.splitlines() if l.strip()
+    ]
+    unique_lines = list(dict.fromkeys(lines))
+    random.shuffle(unique_lines)
+    return unique_lines[:5]
 
 
-@api_blueprint.route('/sentence/submit', methods=['POST'])
+@api_blueprint.route("/sentence/preload", methods=["POST"])
+def preload_sentences():
+    data = request.json
+    key = (data["language"], data["module"], data["cefr"])
+    sentences = generate_sentence_batch(data["cefr"], data["language"], data["module"])
+    SENTENCE_BATCHES[key] = sentences
+    return jsonify({"count": len(sentences)})
+
+
+@api_blueprint.route("/sentence/generate", methods=["POST"])
+def generate_sentence():
+    data = request.json
+    key = (data["language"], data["module"], data["cefr"])
+    batch = SENTENCE_BATCHES.get(key)
+    if not batch:
+        batch = generate_sentence_batch(data["cefr"], data["language"], data["module"])
+        SENTENCE_BATCHES[key] = batch
+    if not batch:
+        return jsonify({"sentence": ""})
+    sentence = batch.pop(0)
+    return jsonify({"sentence": sentence})
+
+
+@api_blueprint.route("/sentence/submit", methods=["POST"])
 def submit_sentence():
     data = request.json
-    user_id = data['user_id']
-    module_name = data['module']
-    language = data['language']
-    cefr = data['cefr']
-    english = data['english']
-    translation = data['translation']
+    user_id = data["user_id"]
+    module_name = data["module"]
+    language = data["language"]
+    cefr = data["cefr"]
+    english = data["english"]
+    translation = data["translation"]
 
     module = Module.query.filter_by(name=module_name, language=language).first()
     if not module:
@@ -108,19 +145,19 @@ def submit_sentence():
         db.session.add(err)
     db.session.commit()
 
-    return jsonify({'response': text})
+    return jsonify({"response": text})
 
 
-@api_blueprint.route('/sentence/followup', methods=['POST'])
+@api_blueprint.route("/sentence/followup", methods=["POST"])
 def followup():
     data = request.json
-    error_text = data['error']
-    cefr = data['cefr']
-    language = data['language']
-    module = data['module']
+    error_text = data["error"]
+    cefr = data["cefr"]
+    language = data["language"]
+    module = data["module"]
     prompt = (
         f"Generate a sentence in English for a student at the {cefr} level to translate into {language}. "
-        f"Focus on the following error: {error_text}." 
+        f"Focus on the following error: {error_text}."
         f"The sentence should cover the topic of: {module}."
     )
     response = client.chat.completions.create(
@@ -128,37 +165,50 @@ def followup():
         messages=[{"role": "user", "content": prompt}],
     )
     text = response.choices[0].message.content.strip()
-    return jsonify({'sentence': text})
+    return jsonify({"sentence": text})
 
 
-@api_blueprint.route('/session/<int:user_id>/export', methods=['GET'])
+@api_blueprint.route("/session/<int:user_id>/export", methods=["GET"])
 def export_session(user_id):
     sentences = Sentence.query.filter_by(user_id=user_id).all()
 
     # Write CSV to string
     string_data = StringIO()
     writer = csv.writer(string_data)
-    writer.writerow(['timestamp', 'english', 'submitted', 'corrected', 'explanation', 'module', 'language', 'cefr'])
+    writer.writerow(
+        [
+            "timestamp",
+            "english",
+            "submitted",
+            "corrected",
+            "explanation",
+            "module",
+            "language",
+            "cefr",
+        ]
+    )
     for s in sentences:
-        explanation = s.openai_response.replace('\n', ' ')
-        writer.writerow([
-            s.timestamp,
-            s.english_text,
-            s.user_translation,
-            s.openai_response.splitlines()[1] if s.openai_response else '',
-            explanation,
-            s.module.name,
-            s.module.language,
-            s.cefr_level,
-        ])
+        explanation = s.openai_response.replace("\n", " ")
+        writer.writerow(
+            [
+                s.timestamp,
+                s.english_text,
+                s.user_translation,
+                s.openai_response.splitlines()[1] if s.openai_response else "",
+                explanation,
+                s.module.name,
+                s.module.language,
+                s.cefr_level,
+            ]
+        )
     string_data.seek(0)
 
     # Convert to binary for send_file
-    bytes_data = BytesIO(string_data.getvalue().encode('utf-8'))
+    bytes_data = BytesIO(string_data.getvalue().encode("utf-8"))
 
     return send_file(
         bytes_data,
-        mimetype='text/csv',
+        mimetype="text/csv",
         as_attachment=True,
-        download_name='session.csv',
+        download_name="session.csv",
     )
