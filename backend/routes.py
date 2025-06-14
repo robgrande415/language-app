@@ -155,7 +155,8 @@ def submit_sentence():
 
     # extract errors
     lines = text.splitlines()
-    explanation_lines = lines[2:]
+    explanation_start = next((i for i, line in enumerate(lines) if line.strip().lower() == "explanation:"), None)
+    explanation_lines = lines[explanation_start + 1:] if explanation_start is not None else []
     for line in explanation_lines:
         err = Error(sentence_id=sentence.id, error_text=line, module_id=module.id)
         db.session.add(err)
