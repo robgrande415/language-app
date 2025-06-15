@@ -49,7 +49,6 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
   };
 
   const nextStep = () => {
-<<<<<<< HEAD
     const selected = errors.filter((_, idx) => checked[idx]);
     axios.post('/errors/save', { sentence_id: sentenceId, errors: selected })
       .then(() => {
@@ -64,15 +63,6 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
           fetchSentence();
         }
       });
-=======
-    if (count >= questionCount) {
-      onComplete(correctCount);
-    } else {
-      setAnswer('');
-      setResponse('');
-      fetchSentence();
-    }
->>>>>>> main
   };
 
   return (
