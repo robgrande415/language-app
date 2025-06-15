@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
-
-function SessionSummary({ restart, home, user }) {
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+function SessionSummary({ restart, home, user, stats, module, language }) {
   const [filename, setFilename] = useState('session.csv');
   const [errorsFilename, setErrorsFilename] = useState('errors.csv');
+
+  useEffect(() => {
+    axios.post('/session/complete', {
+      user_id: user.id,
+      language,
+      module,
+      questions_answered: stats.total,
+      questions_correct: stats.correct,
+    });
+  }, []);
+
+  const percent = stats.total ? Math.round((stats.correct / stats.total) * 100) : 0;
 
   const download = async () => {
     try {
@@ -40,6 +52,7 @@ function SessionSummary({ restart, home, user }) {
     <div style={{ padding: '2rem' }}>
       <h2>🎉 Congrats!</h2>
       <p>You’ve completed the module.</p>
+      <p>Score: {stats.correct}/{stats.total} ({percent}%)</p>
       <div style={{ marginTop: '1rem' }}>
         <input
           value={filename}

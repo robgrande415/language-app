@@ -15,12 +15,16 @@ function ModuleScreen({
 }) {
   const [modules, setModules] = useState([]);
   const [search, setSearch] = useState("");
+  const [scores, setScores] = useState({});
 
   useEffect(() => {
     if (language) {
       axios.get(`/modules/${language}`).then((res) => setModules(res.data));
+      axios
+        .get(`/results/${user.id}/${language}`)
+        .then((res) => setScores(res.data));
     }
-  }, [language]);
+  }, [language, user]);
 
   const filtered = modules.filter((m) =>
     m.toLowerCase().includes(search.toLowerCase()),
@@ -84,8 +88,35 @@ function ModuleScreen({
       />
       <ul>
         {filtered.map((m) => (
-          <li key={m}>
-            <button onClick={() => chooseModule(m)}>{m}</button>
+          <li key={m} style={{ display: "flex", alignItems: "center" }}>
+            <button onClick={() => chooseModule(m)} style={{ marginRight: "0.5rem" }}>{m}</button>
+            <div style={{ display: "flex" }}>
+              {(scores[m] || []).map((s, idx) => {
+                const pct = Math.round(s * 100);
+                let bg = "red";
+                if (pct > 80) bg = "green";
+                else if (pct >= 60) bg = "orange";
+                return (
+                  <span
+                    key={idx}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      backgroundColor: bg,
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginLeft: 4,
+                      fontSize: 12,
+                    }}
+                  >
+                    {pct}
+                  </span>
+                );
+              })}
+            </div>
           </li>
         ))}
       </ul>
