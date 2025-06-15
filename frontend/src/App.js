@@ -17,6 +17,7 @@ function App() {
   const [screen, setScreen] = useState("home");
   const [topicOptions, setTopicOptions] = useState([]);
   const [selectedTopics, setSelectedTopics] = useState([]);
+  const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
 
   const login = (selectedUser) => {
     setUser(selectedUser);
@@ -61,7 +62,10 @@ function App() {
           cefr={cefr}
           module={module}
           questionCount={questionCount}
-          onComplete={() => setScreen("summary")}
+          onComplete={(correct) => {
+            setSessionStats({ correct, total: questionCount });
+            setScreen("summary");
+          }}
           home={() => setScreen("home")}
         />
       );
@@ -94,6 +98,9 @@ function App() {
           restart={() => setScreen("practice")}
           home={() => setScreen("home")}
           user={user}
+          stats={sessionStats}
+          module={module}
+          language={language}
         />
       );
     default:

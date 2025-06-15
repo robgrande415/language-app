@@ -9,6 +9,7 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
   const [checked, setChecked] = useState([]);
   const [sentenceId, setSentenceId] = useState(null);
   const [count, setCount] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [stage, setStage] = useState('question'); // 'question' or 'result'
 
   useEffect(() => {
@@ -33,15 +34,22 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
       translation: answer,
     }).then(res => {
       setResponse(res.data.response);
+
       setErrors(res.data.errors || []);
       setChecked((res.data.errors || []).map(() => true));
       setSentenceId(res.data.sentence_id);
+
+      if (res.data.correct === 1) {
+        setCorrectCount(c => c + 1);
+      }
+
       setCount(c => c + 1);
       setStage('result');
     });
   };
 
   const nextStep = () => {
+<<<<<<< HEAD
     const selected = errors.filter((_, idx) => checked[idx]);
     axios.post('/errors/save', { sentence_id: sentenceId, errors: selected })
       .then(() => {
@@ -56,6 +64,15 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
           fetchSentence();
         }
       });
+=======
+    if (count >= questionCount) {
+      onComplete(correctCount);
+    } else {
+      setAnswer('');
+      setResponse('');
+      fetchSentence();
+    }
+>>>>>>> main
   };
 
   return (

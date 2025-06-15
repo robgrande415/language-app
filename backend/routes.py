@@ -7,19 +7,15 @@ import re
 import random
 from dotenv import load_dotenv
 from flask_cors import cross_origin
+from collections import defaultdict
 
-from models import db, User, Module, Sentence, Error
+from models import db, User, Module, Sentence, Error, ModuleResult
 
 api_blueprint = Blueprint("api", __name__)
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# hardcoded modules
-MODULES = {
-    "French": ["Simple present tense", "Imperfect", "Prepositions"],
-    "Spanish": ["Ser vs Estar", "Nouns", "Preterite"],
-}
 
 # cache of pre-generated sentences per (language, module, cefr)
 SENTENCE_BATCHES = {}
@@ -40,7 +36,22 @@ def users():
 
 @api_blueprint.route("/modules/<language>", methods=["GET"])
 def modules(language):
-    return jsonify(MODULES.get(language, []))
+    modules = Module.query.filter_by(language=language).all()
+    names = [m.name for m in modules]
+    return jsonify(names)
+
+
+@api_blueprint.route("/modules", methods=["POST"])
+def add_module():
+    data = request.json
+    name = data.get("name")
+    language = data.get("language")
+    if not name or not language:
+        return jsonify({"error": "name and language required"}), 400
+    module = Module(name=name, language=language)
+    db.session.add(module)
+    db.session.commit()
+    return jsonify({"id": module.id, "name": module.name, "language": module.language})
 
 
 def generate_sentence_prompt(cefr, target_language, module):
@@ -132,22 +143,23 @@ def submit_sentence():
         ""
         #"Ex. "
     )
-    prompt = (
-        "Correct these, ignoring spelling errors.\n"
-        "Respond in the format: \n"
-        "<original french sentence> \n"
-        "<correct french sentence with only the corrections in bold>\n"
-        "<list of corrections with quick explanations, newline delimited>"
-        "\n"
-        "Ex. Our technical team is developing a secure digital portal for the bank’s lending services. - Notre equipe technique est en train de développer un interface digital securisé pour les services de prêt de la banque\n"
-        "\n"
-        "Notre equipe technique est en train de développer *une* interface *numérique* *sécurisée* pour les services de prêt de la banque\n"
-        "Explanation:\n"
-        "interface is feminine → une \n"
-        "digital → numérique is preferred in formal/technical French\n"
-        "securisé → sécurisée for feminine agreement"
-        )
-    prompt = f"{prompt}"
+    prompt = f"""
+            Correct these, ignoring spelling errors.
+            Respond in the format:
+            <original {language} sentence>
+            <correct {language} sentence with only the corrections in bold>
+            <list of corrections with quick explanations, newline delimited>
+            If the response is correct, simply respond with "No corrections needed"
+
+            Ex. Our technical team is developing a secure digital portal for the bank’s lending services. - Notre equipe technique est en train de développer un interface digital securisé pour les services de prêt de la banque
+
+            Notre equipe technique est en train de développer *une* interface *numérique* *sécurisée* pour les services de prêt de la banque
+            Explanation:
+            interface is feminine → une
+            digital → numérique is preferred in formal/technical French
+            securisé → sécurisée for feminine agreement
+            """
+
     user_message = f"{english} - {translation}."
     full_prompt = prompt + "\n New submission \n" + user_message
     current_app.logger.info("OpenAI prompt: %s", full_prompt)
@@ -170,9 +182,29 @@ def submit_sentence():
     )
     explanation_lines = lines[explanation_start + 1 :] if explanation_start is not None else []
 
+    # ask if translation is correct according to module topic
+    judge_prompt = (
+        f"Module topic: {module_name}.\n"
+        f"English sentence: {english}\n"
+        f"Learner translation: {translation}\n"
+        "Ignoring spelling or vocabulary mistakes, did the learner correctly "
+        "convey the meaning and use the module concept? Respond only with 1 or 0."
+    )
+    current_app.logger.info("OpenAI prompt: %s", judge_prompt)
+    judge_resp = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": judge_prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", judge_resp.choices[0].message.content.strip()
+    )
+    correct_text = judge_resp.choices[0].message.content.strip()
+    correct_val = 1 if correct_text.startswith("1") else 0
+
     return jsonify(
         {
-            "response": text,
+            "response": text, 
+            "correct": correct_val,
             "errors": explanation_lines,
             "sentence_id": sentence.id,
         }
@@ -347,3 +379,54 @@ def personalized_preload():
     key = (language, "personalized", cefr)
     SENTENCE_BATCHES[key] = lines[:20]
     return jsonify({"count": len(SENTENCE_BATCHES[key])})
+
+
+@api_blueprint.route("/session/complete", methods=["POST"])
+def session_complete():
+    data = request.json
+    user_id = data.get("user_id")
+    language = data.get("language")
+    module_name = data.get("module")
+    questions_answered = data.get("questions_answered", 0)
+    questions_correct = data.get("questions_correct", 0)
+
+    module = Module.query.filter_by(name=module_name, language=language).first()
+    if not module:
+        module = Module(name=module_name, language=language)
+        db.session.add(module)
+        db.session.commit()
+
+    score = (
+        questions_correct / questions_answered
+        if questions_answered
+        else 0
+    )
+
+    result = ModuleResult(
+        user_id=user_id,
+        module_id=module.id,
+        questions_answered=questions_answered,
+        questions_correct=questions_correct,
+        score=score,
+    )
+    db.session.add(result)
+    db.session.commit()
+    return jsonify({"status": "ok"})
+
+
+@api_blueprint.route("/results/<int:user_id>/<language>", methods=["GET"])
+def module_results(user_id, language):
+    rows = (
+        db.session.query(ModuleResult, Module.name)
+        .join(Module, ModuleResult.module_id == Module.id)
+        .filter(ModuleResult.user_id == user_id, Module.language == language)
+        .order_by(ModuleResult.timestamp.desc())
+        .all()
+    )
+    data = defaultdict(list)
+
+    for res, name in rows:
+        if len(data[name]) < 3:
+            data[name].append(res.score)
+
+    return jsonify(dict(data))
