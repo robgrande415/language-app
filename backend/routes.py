@@ -59,6 +59,7 @@ def instruction():
     data = request.json
     module_name = data.get("module")
     language = data.get("language")
+    force = data.get("force", False)
     if not module_name:
         return jsonify({"error": "module required"}), 400
 
@@ -69,7 +70,7 @@ def instruction():
         db.session.commit()
 
     instr = Instruction.query.filter_by(module_id=module.id).first()
-    if instr:
+    if instr and not force:
         return jsonify({"instruction": instr.text})
 
     prompt = f"Provide a short instructional module about {module_name}."
@@ -82,7 +83,11 @@ def instruction():
         "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     text = response.choices[0].message.content.strip()
-    db.session.add(Instruction(module_id=module.id, text=text))
+    if instr:
+        instr.text = text
+    else:
+        instr = Instruction(module_id=module.id, text=text)
+        db.session.add(instr)
     db.session.commit()
     return jsonify({"instruction": text})
 

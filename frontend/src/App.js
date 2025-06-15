@@ -21,6 +21,11 @@ function App() {
   const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
   const [instruction, setInstruction] = useState("");
 
+  const regenerateInstruction = () =>
+    axios
+      .post("/instruction", { language, module, force: true })
+      .then((res) => setInstruction(res.data.instruction || ""));
+
   const login = (selectedUser) => {
     setUser(selectedUser);
     setScreen("select-language");
@@ -65,6 +70,7 @@ function App() {
       return (
         <InstructionModule
           text={instruction}
+          regenerate={regenerateInstruction}
           next={() => setScreen("practice")}
           home={() => setScreen("home")}
         />
