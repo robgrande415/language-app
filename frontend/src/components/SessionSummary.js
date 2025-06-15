@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 function SessionSummary({ restart, home, user, stats, module, language }) {
   const [filename, setFilename] = useState('session.csv');
   const [errorsFilename, setErrorsFilename] = useState('errors.csv');
+  const savedRef = useRef(false);
 
   useEffect(() => {
+    if (savedRef.current) return;
+    savedRef.current = true;
     axios.post('/session/complete', {
       user_id: user.id,
       language,

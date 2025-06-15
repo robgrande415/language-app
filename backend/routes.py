@@ -392,7 +392,9 @@ def module_results(user_id, language):
     )
     data = {}
     for res, name in rows:
-        data.setdefault(name, []).append(res.score)
+        arr = data.setdefault(name, [])
+        if not arr or arr[-1] != res.score:
+            arr.append(res.score)
     for k in data:
         data[k] = data[k][:3]
     return jsonify(data)
