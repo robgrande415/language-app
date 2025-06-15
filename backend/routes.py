@@ -46,7 +46,9 @@ def users():
 
 @api_blueprint.route("/modules/<language>", methods=["GET"])
 def modules(language):
-    modules = Module.query.filter_by(language=language).all()
+    modules = Module.query.filter(
+        Module.language == language, Module.name.isnot(None), Module.name != ''
+    ).all()
     names = [m.name for m in modules]
     return jsonify(names)
 
