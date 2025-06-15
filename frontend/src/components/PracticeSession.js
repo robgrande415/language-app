@@ -13,6 +13,7 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
   const [correctCount, setCorrectCount] = useState(0);
   const [stage, setStage] = useState('question'); // 'question' or 'result'
   const [showModal, setShowModal] = useState(false);
+  const [vocab, setVocab] = useState([]);
 
   useEffect(() => {
     fetchSentence();
@@ -26,7 +27,7 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
       });
   };
 
-  const submit = () => {
+const submit = () => {
     axios.post('/sentence/submit', {
       user_id: user.id,
       language,
@@ -50,9 +51,21 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
     });
   };
 
+  const toggleWord = (word) => {
+    if (vocab.includes(word)) {
+      setVocab(vocab.filter((w) => w !== word));
+    } else {
+      setVocab([...vocab, word]);
+    }
+  };
+
   const nextStep = () => {
     const selected = errors.filter((_, idx) => checked[idx]);
-    axios.post('/errors/save', { sentence_id: sentenceId, errors: selected })
+    axios
+      .post('/errors/save', { sentence_id: sentenceId, errors: selected })
+      .then(() =>
+        axios.post('/vocab/add', { user_id: user.id, words: vocab })
+      )
       .then(() => {
         if (count >= questionCount) {
           onComplete(correctCount);
@@ -62,6 +75,7 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
           setErrors([]);
           setChecked([]);
           setSentenceId(null);
+          setVocab([]);
           fetchSentence();
         }
       });
@@ -130,7 +144,25 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
       )}
       {stage === 'result' && (
         <>
-          <pre>{response}</pre>
+          <div style={{ whiteSpace: 'pre-wrap' }}>
+            {response.split(/(\b)/).map((tok, idx) => {
+              const clean = tok.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'-]/g, '');
+              if (!clean) return tok;
+              const selected = vocab.includes(clean);
+              return (
+                <span
+                  key={idx}
+                  onClick={() => toggleWord(clean)}
+                  style={{
+                    backgroundColor: selected ? 'lightblue' : 'transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {tok}
+                </span>
+              );
+            })}
+          </div>
           {errors.length > 0 && (
             <div>
               <h4>Select errors to save:</h4>
@@ -150,6 +182,16 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
                       {err}
                     </label>
                   </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {vocab.length > 0 && (
+            <div>
+              <h4>Vocab List (click word to add)</h4>
+              <ul>
+                {vocab.map((w) => (
+                  <li key={w}>{w}</li>
                 ))}
               </ul>
             </div>

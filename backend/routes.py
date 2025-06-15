@@ -9,7 +9,16 @@ from dotenv import load_dotenv
 from flask_cors import cross_origin
 from collections import defaultdict
 
-from models import db, User, Module, Sentence, Error, ModuleResult, Instruction
+from models import (
+    db,
+    User,
+    Module,
+    Sentence,
+    Error,
+    ModuleResult,
+    Instruction,
+    VocabWord,
+)
 
 api_blueprint = Blueprint("api", __name__)
 
@@ -469,3 +478,29 @@ def module_results(user_id, language):
             data[name].append(res.score)
 
     return jsonify(dict(data))
+
+
+@api_blueprint.route("/vocab/add", methods=["POST"])
+def add_vocab():
+    data = request.json
+    user_id = data.get("user_id")
+    words = data.get("words", [])
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    added = 0
+    for w in words:
+        word = w.strip()
+        if not word:
+            continue
+        exists = VocabWord.query.filter_by(user_id=user_id, word=word).first()
+        if exists:
+            continue
+        vw = VocabWord(user_id=user_id, word=word)
+        db.session.add(vw)
+        added += 1
+    db.session.commit()
+    return jsonify({"status": "ok", "count": added})
