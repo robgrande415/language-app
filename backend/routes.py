@@ -5,6 +5,7 @@ import csv
 from io import StringIO, BytesIO
 import re
 import random
+from datetime import datetime
 from dotenv import load_dotenv
 from flask_cors import cross_origin
 from collections import defaultdict
@@ -469,3 +470,140 @@ def module_results(user_id, language):
             data[name].append(res.score)
 
     return jsonify(dict(data))
+
+
+@api_blueprint.route("/personalized/errors", methods=["POST"])
+def personalized_errors():
+    data = request.json
+    user_id = data.get("user_id")
+    language = data.get("language")
+
+    rows = (
+        db.session.query(Error, Sentence.timestamp)
+        .join(Sentence, Error.sentence_id == Sentence.id)
+        .join(Module, Error.module_id == Module.id)
+        .filter(Sentence.user_id == user_id, Module.language == language)
+        .order_by(
+            Error.last_reviewed_correctly.desc().nullsfirst(),
+            Sentence.timestamp.desc(),
+        )
+        .limit(20)
+        .all()
+    )
+
+    data_list = []
+    for err, ts in rows:
+        data_list.append(
+            {
+                "id": err.id,
+                "error_text": err.error_text,
+                "last_reviewed": err.last_reviewed.isoformat()
+                if err.last_reviewed
+                else None,
+                "last_reviewed_correctly": err.last_reviewed_correctly.isoformat()
+                if err.last_reviewed_correctly
+                else None,
+                "review_count": err.review_count,
+                "correct_review_count": err.correct_review_count,
+            }
+        )
+
+    return jsonify({"errors": data_list})
+
+
+@api_blueprint.route("/personalized/error_sentence", methods=["POST"])
+def personalized_error_sentence():
+    data = request.json
+    error_id = data.get("error_id")
+    language = data.get("language")
+    cefr = data.get("cefr")
+
+    err = Error.query.get(error_id)
+    if not err:
+        return jsonify({"sentence": ""})
+
+    module_name = err.module.name
+    prompt = (
+        f"Generate 10 short English sentences for a student at the {cefr} level to translate into {language}. "
+        f"Focus on the following error: {err.error_text}. "
+        f"The sentences should cover the topic of: {module_name}. Number each sentence."
+    )
+    current_app.logger.info("OpenAI prompt: %s", prompt)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
+    )
+    lines = [
+        re.sub(r"^\d+[\).]\s*", "", l).strip()
+        for l in response.choices[0].message.content.strip().splitlines()
+        if l.strip()
+    ]
+    if not lines:
+        return jsonify({"sentence": ""})
+    sentence = random.choice(lines)
+    return jsonify({"sentence": sentence})
+
+
+@api_blueprint.route("/personalized/error_submit", methods=["POST"])
+def personalized_error_submit():
+    data = request.json
+    user_id = data.get("user_id")
+    error_id = data.get("error_id")
+    language = data.get("language")
+    cefr = data.get("cefr")
+    english = data.get("english")
+    translation = data.get("translation")
+
+    err = Error.query.get(error_id)
+    if not err:
+        return jsonify({"response": "", "correct": 0})
+
+    prompt = f"""
+            Correct these, ignoring spelling errors.
+            Respond in the format:
+            <original {language} sentence>
+            <correct {language} sentence with only the corrections in bold>
+            <list of corrections with quick explanations, newline delimited>
+            If the response is correct, simply respond with "No corrections needed"
+            """
+
+    user_message = f"{english} - {translation}."
+    full_prompt = prompt + "\n New submission \n" + user_message
+    current_app.logger.info("OpenAI prompt: %s", full_prompt)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": full_prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
+    )
+    text = response.choices[0].message.content.strip()
+
+    judge_prompt = (
+        f"Error to practice: {err.error_text}.\n"
+        f"English sentence: {english}\n"
+        f"Learner translation: {translation}\n"
+        "Ignoring spelling or vocabulary mistakes, did the learner demonstrate understanding of the error? Respond only with 1 or 0."
+    )
+    current_app.logger.info("OpenAI prompt: %s", judge_prompt)
+    judge_resp = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": judge_prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", judge_resp.choices[0].message.content.strip()
+    )
+    correct_text = judge_resp.choices[0].message.content.strip()
+    correct_val = 1 if correct_text.startswith("1") else 0
+
+    err.last_reviewed = datetime.utcnow()
+    err.review_count = (err.review_count or 0) + 1
+    if correct_val == 1:
+        err.last_reviewed_correctly = datetime.utcnow()
+        err.correct_review_count = (err.correct_review_count or 0) + 1
+    db.session.commit()
+
+    return jsonify({"response": text, "correct": correct_val})
