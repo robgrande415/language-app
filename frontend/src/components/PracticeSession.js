@@ -6,6 +6,7 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
   const [answer, setAnswer] = useState('');
   const [response, setResponse] = useState('');
   const [count, setCount] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const [stage, setStage] = useState('question'); // 'question' or 'result'
 
   useEffect(() => {
@@ -30,6 +31,9 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
       translation: answer,
     }).then(res => {
       setResponse(res.data.response);
+      if (res.data.correct === 1) {
+        setCorrectCount(c => c + 1);
+      }
       setCount(c => c + 1);
       setStage('result');
     });
@@ -37,7 +41,7 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
 
   const nextStep = () => {
     if (count >= questionCount) {
-      onComplete();
+      onComplete(correctCount);
     } else {
       setAnswer('');
       setResponse('');

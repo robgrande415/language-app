@@ -39,3 +39,16 @@ class Error(db.Model):
 
     sentence = db.relationship('Sentence', backref=db.backref('errors', lazy=True))
     module = db.relationship('Module', backref=db.backref('errors', lazy=True))
+
+
+class ModuleResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
+    questions_answered = db.Column(db.Integer, nullable=False)
+    questions_correct = db.Column(db.Integer, nullable=False)
+    score = db.Column(db.Float, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('module_results', lazy=True))
+    module = db.relationship('Module', backref=db.backref('module_results', lazy=True))
