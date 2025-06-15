@@ -524,6 +524,7 @@ def personalized_error_sentence():
         "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     pattern = re.compile(r"^\s*\d+[\).:\-]?\s+")
+    raw_text = response.choices[0].message.content.strip()
     lines = [
         re.sub(pattern, "", line).strip()
         for line in raw_text.splitlines()
