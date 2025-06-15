@@ -62,7 +62,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
     <div style={{ padding: '2rem' }}>
       {stage === 'question' && (
         <>
-          <h4>Practice error: {currentError.error_text}</h4>
+          <h4>Practice error:</h4>
           <p>{sentence}</p>
           <input value={answer} onChange={e => setAnswer(e.target.value)} />
           <button onClick={submit}>Submit</button>
