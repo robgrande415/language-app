@@ -162,16 +162,21 @@ def submit_sentence():
     sentence.openai_response = text
     db.session.commit()
 
-    # extract errors
+    # parse errors but do not save yet
     lines = text.splitlines()
-    explanation_start = next((i for i, line in enumerate(lines) if line.strip().lower() == "explanation:"), None)
-    explanation_lines = lines[explanation_start + 1:] if explanation_start is not None else []
-    for line in explanation_lines:
-        err = Error(sentence_id=sentence.id, error_text=line, module_id=module.id)
-        db.session.add(err)
-    db.session.commit()
+    explanation_start = next(
+        (i for i, line in enumerate(lines) if line.strip().lower() == "explanation:"),
+        None,
+    )
+    explanation_lines = lines[explanation_start + 1 :] if explanation_start is not None else []
 
-    return jsonify({"response": text})
+    return jsonify(
+        {
+            "response": text,
+            "errors": explanation_lines,
+            "sentence_id": sentence.id,
+        }
+    )
 
 
 @api_blueprint.route("/sentence/followup", methods=["POST"])
@@ -196,6 +201,21 @@ def followup():
     )
     text = response.choices[0].message.content.strip()
     return jsonify({"sentence": text})
+
+
+@api_blueprint.route("/errors/save", methods=["POST"])
+def save_errors():
+    data = request.json
+    sentence_id = data.get("sentence_id")
+    errors = data.get("errors", [])
+    sentence = Sentence.query.get(sentence_id)
+    if not sentence:
+        return jsonify({"error": "Sentence not found"}), 404
+    for line in errors:
+        err = Error(sentence_id=sentence.id, error_text=line, module_id=sentence.module_id)
+        db.session.add(err)
+    db.session.commit()
+    return jsonify({"status": "ok", "count": len(errors)})
 
 
 @api_blueprint.route("/session/<int:user_id>/export", methods=["GET"])
