@@ -53,7 +53,7 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
     axios.post('/errors/save', { sentence_id: sentenceId, errors: selected })
       .then(() => {
         if (count >= questionCount) {
-          onComplete();
+          onComplete(correctCount);
         } else {
           setAnswer('');
           setResponse('');
