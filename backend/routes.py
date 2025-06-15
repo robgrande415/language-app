@@ -10,7 +10,16 @@ from dotenv import load_dotenv
 from flask_cors import cross_origin
 from collections import defaultdict
 
-from models import db, User, Module, Sentence, Error, ModuleResult, Instruction
+from models import (
+    db,
+    User,
+    Module,
+    Sentence,
+    Error,
+    ModuleResult,
+    Instruction,
+    VocabWord,
+)
 
 api_blueprint = Blueprint("api", __name__)
 
@@ -283,7 +292,14 @@ def save_errors():
     if not sentence:
         return jsonify({"error": "Sentence not found"}), 404
     for line in errors:
-        err = Error(sentence_id=sentence.id, error_text=line, module_id=sentence.module_id)
+        err = Error(sentence_id=sentence.id, 
+            error_text=line, 
+            module_id=sentence.module_id,
+            last_reviewed=None,
+            last_reviewed_correctly=None,
+            review_count=0,
+            correct_review_count=0
+            )
         db.session.add(err)
     db.session.commit()
     return jsonify({"status": "ok", "count": len(errors)})
@@ -472,6 +488,7 @@ def module_results(user_id, language):
     return jsonify(dict(data))
 
 
+
 @api_blueprint.route("/personalized/errors", methods=["POST"])
 def personalized_errors():
     data = request.json
@@ -607,3 +624,62 @@ def personalized_error_submit():
     db.session.commit()
 
     return jsonify({"response": text, "correct": correct_val})
+
+@api_blueprint.route("/vocab/add", methods=["POST"])
+def add_vocab():
+    data = request.json
+    user_id = data.get("user_id")
+    words = data.get("words", [])
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    added = 0
+    for w in words:
+        word = w.strip()
+        if not word:
+            continue
+        exists = VocabWord.query.filter_by(user_id=user_id, word=word).first()
+        if exists:
+            continue
+        vw = VocabWord(user_id=user_id, word=word)
+        db.session.add(vw)
+        added += 1
+    db.session.commit()
+    return jsonify({"status": "ok", "count": added})
+
+
+@api_blueprint.route("/vocab/<int:user_id>/export", methods=["GET"])
+def export_vocab(user_id):
+    words = VocabWord.query.filter_by(user_id=user_id).order_by(VocabWord.added_at).all()
+
+    string_data = StringIO()
+    writer = csv.writer(string_data)
+    writer.writerow([
+        "word",
+        "added_at",
+        "last_reviewed",
+        "last_correct",
+        "review_count",
+        "correct_count",
+    ])
+    for w in words:
+        writer.writerow([
+            w.word,
+            w.added_at,
+            w.last_reviewed or "",
+            w.last_correct or "",
+            w.review_count,
+            w.correct_count,
+        ])
+    string_data.seek(0)
+    bytes_data = BytesIO(string_data.getvalue().encode("utf-8"))
+
+    return send_file(
+        bytes_data,
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="vocab.csv",
+    )

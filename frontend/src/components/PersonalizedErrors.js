@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 function PersonalizedErrors({ errors, onNext, home }) {
-  const [items, setItems] = useState(errors.map(e => ({ ...e, checked: true })));
+  const [items, setItems] = useState(errors.map(e => ({ ...e, checked: false })));
 
   const toggle = idx => {
     const list = [...items];

@@ -36,10 +36,11 @@ class Error(db.Model):
     sentence_id = db.Column(db.Integer, db.ForeignKey('sentence.id'), nullable=False)
     error_text = db.Column(db.Text)
     module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
-    last_reviewed = db.Column(db.DateTime)
-    last_reviewed_correctly = db.Column(db.DateTime)
+    last_reviewed = db.Column(db.DateTime, nullable=True)
+    last_reviewed_correctly = db.Column(db.DateTime, nullable=True)
     review_count = db.Column(db.Integer, default=0)
     correct_review_count = db.Column(db.Integer, default=0)
+
 
     sentence = db.relationship('Sentence', backref=db.backref('errors', lazy=True))
     module = db.relationship('Module', backref=db.backref('errors', lazy=True))
@@ -64,3 +65,16 @@ class Instruction(db.Model):
     text = db.Column(db.Text, nullable=False)
 
     module = db.relationship('Module', backref=db.backref('instruction', uselist=False))
+
+
+class VocabWord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    word = db.Column(db.String(120), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_reviewed = db.Column(db.DateTime)
+    last_correct = db.Column(db.DateTime)
+    review_count = db.Column(db.Integer, default=0)
+    correct_count = db.Column(db.Integer, default=0)
+
+    user = db.relationship('User', backref=db.backref('vocab_words', lazy=True))
