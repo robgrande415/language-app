@@ -26,6 +26,14 @@ function ModuleScreen({
     m.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const addModule = () => {
+    const name = window.prompt('New module name');
+    if (!name) return;
+    axios.post('/modules', { name, language }).then(() => {
+      setModules([...modules, name]);
+    });
+  };
+
   const chooseModule = (m) => {
     setModule(m);
     axios
@@ -82,6 +90,9 @@ function ModuleScreen({
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search"
       />
+      <button onClick={addModule} style={{ marginLeft: "1rem" }}>
+        Add Module
+      </button>
       <ul>
         {filtered.map((m) => (
           <li key={m}>

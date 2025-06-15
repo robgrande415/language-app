@@ -15,11 +15,6 @@ api_blueprint = Blueprint("api", __name__)
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# hardcoded modules
-MODULES = {
-    "French": ["Simple present tense", "Imperfect", "Prepositions"],
-    "Spanish": ["Ser vs Estar", "Nouns", "Preterite"],
-}
 
 # cache of pre-generated sentences per (language, module, cefr)
 SENTENCE_BATCHES = {}
@@ -40,7 +35,22 @@ def users():
 
 @api_blueprint.route("/modules/<language>", methods=["GET"])
 def modules(language):
-    return jsonify(MODULES.get(language, []))
+    modules = Module.query.filter_by(language=language).all()
+    names = [m.name for m in modules]
+    return jsonify(names)
+
+
+@api_blueprint.route("/modules", methods=["POST"])
+def add_module():
+    data = request.json
+    name = data.get("name")
+    language = data.get("language")
+    if not name or not language:
+        return jsonify({"error": "name and language required"}), 400
+    module = Module(name=name, language=language)
+    db.session.add(module)
+    db.session.commit()
+    return jsonify({"id": module.id, "name": module.name, "language": module.language})
 
 
 def generate_sentence_prompt(cefr, target_language, module):
