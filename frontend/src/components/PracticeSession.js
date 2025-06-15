@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 
 function PracticeSession({ user, language, cefr, module, instruction, questionCount, onComplete, home }) {
   const [sentence, setSentence] = useState('');
@@ -92,7 +93,7 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
               overflow: 'auto',
             }}
           >
-            <pre>{instruction}</pre>
+            <ReactMarkdown>{instruction}</ReactMarkdown>
             <button onClick={() => setShowModal(false)}>Close</button>
           </div>
         </div>

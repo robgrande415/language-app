@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 function InstructionModule({ text, next, home, regenerate }) {
   const [loading, setLoading] = useState(false);
+
   const handleRegenerate = () => {
     setLoading(true);
     regenerate().finally(() => setLoading(false));
@@ -10,8 +12,10 @@ function InstructionModule({ text, next, home, regenerate }) {
   return (
     <div style={{ padding: '2rem' }}>
       <h2>Instruction</h2>
-      <pre>{text}</pre>
-      <div style={{ marginTop: '1rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <ReactMarkdown>{text}</ReactMarkdown>
+      </div>
+      <div>
         <button onClick={handleRegenerate} style={{ marginRight: '1rem' }} disabled={loading}>
           {loading ? 'Regenerating...' : 'Regenerate'}
         </button>

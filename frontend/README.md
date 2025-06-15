@@ -19,4 +19,4 @@ Start the development server on port 3000:
 npm start
 ```
 
-The app will talk to the Flask backend on port 5000.
+The app will talk to the Flask backend on port 5050.
