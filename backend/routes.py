@@ -73,7 +73,7 @@ def instruction():
     if instr and not force:
         return jsonify({"instruction": instr.text})
 
-    prompt = f"Provide a short instructional module about {module_name}."
+    prompt = f"Provide a short instructional module for an English speaker learning about {module_name} in {language}. Provide instruction in English."
     current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
