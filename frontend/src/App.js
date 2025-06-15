@@ -110,17 +110,6 @@ function App() {
           home={() => setScreen("home")}
         />
       );
-    case "personalized-errors":
-      return (
-        <PersonalizedErrors
-          errors={errorOptions}
-          onNext={(list) => {
-            setSelectedErrors(list);
-            setScreen("error-review");
-          }}
-          home={() => setScreen("home")}
-        />
-      );
     case "error-review":
       return (
         <ErrorReviewSession
