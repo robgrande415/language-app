@@ -382,35 +382,6 @@ def export_errors(user_id):
         download_name="errors.csv",
     )
 
-@api_blueprint.route("/personalized/topics", methods=["POST"])
-def personalized_topics():
-    data = request.json
-    user_id = data.get("user_id")
-    language = data.get("language")
-    errors = (
-        db.session.query(Error.error_text)
-        .join(Sentence, Error.sentence_id == Sentence.id)
-        .join(Module, Error.module_id == Module.id)
-        .filter(Sentence.user_id == user_id, Module.language == language)
-        .order_by(Sentence.timestamp.desc())
-        .limit(20)
-        .all()
-    )
-    texts = [e[0] for e in errors]
-    if not texts:
-        return jsonify({"topics": []})
-    prompt = "Here are some student errors:\n" + "\n".join(texts) + "\nSummarize the 5 most common error topics as a numbered list."
-    current_app.logger.info("OpenAI prompt: %s", prompt)
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    current_app.logger.info(
-        "OpenAI response: %s", response.choices[0].message.content.strip()
-    )
-    lines = [re.sub(r"^\d+[\).]\s*", "", l).strip() for l in response.choices[0].message.content.strip().splitlines() if l.strip()]
-    return jsonify({"topics": lines[:5]})
-
 
 @api_blueprint.route("/personalized/preload", methods=["POST"])
 def personalized_preload():
@@ -542,8 +513,7 @@ def personalized_error_sentence():
     module_name = err.module.name
     prompt = (
         f"Generate 10 short English sentences for a student at the {cefr} level to translate into {language}. "
-        f"Focus on the following error: {err.error_text}. "
-        f"The sentences should cover the topic of: {module_name}. Number each sentence."
+        f"Focus on the following error: {err.error_text}. Number each sentence."
     )
     current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
@@ -553,10 +523,11 @@ def personalized_error_sentence():
     current_app.logger.info(
         "OpenAI response: %s", response.choices[0].message.content.strip()
     )
+    pattern = re.compile(r"^\s*\d+[\).:\-]?\s+")
     lines = [
-        re.sub(r"^\d+[\).]\s*", "", l).strip()
-        for l in response.choices[0].message.content.strip().splitlines()
-        if l.strip()
+        re.sub(pattern, "", line).strip()
+        for line in raw_text.splitlines()
+        if pattern.match(line)
     ]
     if not lines:
         return jsonify({"sentence": ""})
