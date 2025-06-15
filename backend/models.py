@@ -52,3 +52,11 @@ class ModuleResult(db.Model):
 
     user = db.relationship('User', backref=db.backref('module_results', lazy=True))
     module = db.relationship('Module', backref=db.backref('module_results', lazy=True))
+
+
+class Instruction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False, unique=True)
+    text = db.Column(db.Text, nullable=False)
+
+    module = db.relationship('Module', backref=db.backref('instruction', uselist=False))

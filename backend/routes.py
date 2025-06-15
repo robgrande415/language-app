@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from flask_cors import cross_origin
 from collections import defaultdict
 
-from models import db, User, Module, Sentence, Error, ModuleResult
+from models import db, User, Module, Sentence, Error, ModuleResult, Instruction
 
 api_blueprint = Blueprint("api", __name__)
 
@@ -57,11 +57,22 @@ def add_module():
 @api_blueprint.route("/instruction", methods=["POST"])
 def instruction():
     data = request.json
-    module = data.get("module")
+    module_name = data.get("module")
     language = data.get("language")
-    if not module and language:
+    if not module_name:
         return jsonify({"error": "module required"}), 400
-    prompt = f"Provide a short instructional module for an English speaker learning about {module} in {language}."
+
+    module = Module.query.filter_by(name=module_name, language=language).first()
+    if not module:
+        module = Module(name=module_name, language=language)
+        db.session.add(module)
+        db.session.commit()
+
+    instr = Instruction.query.filter_by(module_id=module.id).first()
+    if instr:
+        return jsonify({"instruction": instr.text})
+
+    prompt = f"Provide a short instructional module about {module_name}."
     current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -71,6 +82,8 @@ def instruction():
         "OpenAI response: %s", response.choices[0].message.content.strip()
     )
     text = response.choices[0].message.content.strip()
+    db.session.add(Instruction(module_id=module.id, text=text))
+    db.session.commit()
     return jsonify({"instruction": text})
 
 

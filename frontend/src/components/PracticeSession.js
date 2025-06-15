@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function PracticeSession({ user, language, cefr, module, questionCount, onComplete, home }) {
+function PracticeSession({ user, language, cefr, module, instruction, questionCount, onComplete, home }) {
   const [sentence, setSentence] = useState('');
   const [answer, setAnswer] = useState('');
   const [response, setResponse] = useState('');
@@ -11,6 +11,7 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
   const [count, setCount] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [stage, setStage] = useState('question'); // 'question' or 'result'
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetchSentence();
@@ -67,6 +68,35 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
 
   return (
     <div style={{ padding: '2rem' }}>
+      {showModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              padding: '1rem',
+              maxWidth: '80%',
+              maxHeight: '80%',
+              overflow: 'auto',
+            }}
+          >
+            <pre>{instruction}</pre>
+            <button onClick={() => setShowModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
       {stage === 'question' && (
         <>
           <h3>Translate:</h3>
@@ -106,6 +136,9 @@ function PracticeSession({ user, language, cefr, module, questionCount, onComple
       )}
       <div>Progress: {count}/{questionCount}</div>
       <div style={{ marginTop: '1rem' }}>
+        <button onClick={() => setShowModal(true)} style={{ marginRight: '1rem' }}>
+          Instruction
+        </button>
         <button onClick={home}>Home</button>
       </div>
     </div>

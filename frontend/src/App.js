@@ -53,6 +53,7 @@ function App() {
             setInstruction(text);
             setScreen("instruction");
           }}
+          storeInstruction={(text) => setInstruction(text)}
           startPersonalized={(topics) => {
             setTopicOptions(topics);
             setScreen("personalized-topics");
@@ -75,6 +76,7 @@ function App() {
           language={language}
           cefr={cefr}
           module={module}
+          instruction={instruction}
           questionCount={questionCount}
           onComplete={(correct) => {
             setSessionStats({ correct, total: questionCount });

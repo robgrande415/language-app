@@ -11,6 +11,7 @@ function ModuleScreen({
   setQuestionCount,
   next,
   showInstruction,
+  storeInstruction,
   startPersonalized,
   home,
 }) {
@@ -45,15 +46,17 @@ function ModuleScreen({
     axios
       .post("/sentence/preload", { language, cefr, module: m })
       .then(() => {
-        if (withInstruction) {
-          axios
-            .post("/instruction", { language, module: m })
-            .then((res) => {
-              showInstruction(res.data.instruction || "");
-            });
-        } else {
-          next();
-        }
+        axios
+          .post("/instruction", { language, module: m })
+          .then((res) => {
+            const text = res.data.instruction || "";
+            storeInstruction(text);
+            if (withInstruction) {
+              showInstruction(text);
+            } else {
+              next();
+            }
+          });
       });
   };
 
