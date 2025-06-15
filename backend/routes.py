@@ -59,11 +59,9 @@ def instruction():
     data = request.json
     module = data.get("module")
     language = data.get("language")
-    if not module:
+    if not module and language:
         return jsonify({"error": "module required"}), 400
-    prompt = f"Provide a short instructional module about {module}."
-    if language:
-        prompt += f" Respond in {language}."
+    prompt = f"Provide a short instructional module for an English speaker learning about {module} in {language}."
     current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
