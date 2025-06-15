@@ -542,7 +542,7 @@ def personalized_error_sentence():
 
     module_name = err.module.name
     prompt = (
-        f"Generate 10 short English sentences for a student at the {cefr} level to translate into {language}. "
+        f"Generate 10 short English sentences for a student at the B2 level to translate into {language}. "
         f"Focus on the following error: {err.error_text}. Number each sentence."
     )
     current_app.logger.info("OpenAI prompt: %s", prompt)
