@@ -504,3 +504,37 @@ def add_vocab():
         added += 1
     db.session.commit()
     return jsonify({"status": "ok", "count": added})
+
+
+@api_blueprint.route("/vocab/<int:user_id>/export", methods=["GET"])
+def export_vocab(user_id):
+    words = VocabWord.query.filter_by(user_id=user_id).order_by(VocabWord.added_at).all()
+
+    string_data = StringIO()
+    writer = csv.writer(string_data)
+    writer.writerow([
+        "word",
+        "added_at",
+        "last_reviewed",
+        "last_correct",
+        "review_count",
+        "correct_count",
+    ])
+    for w in words:
+        writer.writerow([
+            w.word,
+            w.added_at,
+            w.last_reviewed or "",
+            w.last_correct or "",
+            w.review_count,
+            w.correct_count,
+        ])
+    string_data.seek(0)
+    bytes_data = BytesIO(string_data.getvalue().encode("utf-8"))
+
+    return send_file(
+        bytes_data,
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="vocab.csv",
+    )

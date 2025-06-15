@@ -3,6 +3,7 @@ import axios from 'axios';
 function SessionSummary({ restart, home, user, stats, module, language }) {
   const [filename, setFilename] = useState('session.csv');
   const [errorsFilename, setErrorsFilename] = useState('errors.csv');
+  const [vocabFilename, setVocabFilename] = useState('vocab.csv');
   const savedRef = useRef(false);
 
   useEffect(() => {
@@ -51,6 +52,22 @@ function SessionSummary({ restart, home, user, stats, module, language }) {
     }
   };
 
+  const downloadVocab = async () => {
+    try {
+      const response = await fetch(`/vocab/${user.id}/export`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = vocabFilename || 'vocab.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('❌ Failed to download vocab CSV:', err);
+    }
+  };
+
   return (
     <div style={{ padding: '2rem' }}>
       <h2>🎉 Congrats!</h2>
@@ -73,6 +90,15 @@ function SessionSummary({ restart, home, user, stats, module, language }) {
           style={{ marginRight: '1rem' }}
         />
         <button onClick={downloadErrors}>Download Errors</button>
+      </div>
+      <div style={{ marginTop: '1rem' }}>
+        <input
+          value={vocabFilename}
+          onChange={e => setVocabFilename(e.target.value)}
+          placeholder="Vocab filename (e.g., vocab.csv)"
+          style={{ marginRight: '1rem' }}
+        />
+        <button onClick={downloadVocab}>Download Vocab</button>
       </div>
       <div style={{ marginTop: '1rem' }}>
         <button onClick={restart} style={{ marginRight: '1rem' }}>Continue</button>
