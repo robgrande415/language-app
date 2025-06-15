@@ -7,6 +7,8 @@ import PracticeSession from "./components/PracticeSession";
 import SessionSummary from "./components/SessionSummary";
 import ExportPage from "./components/ExportPage";
 import PersonalizedTopics from "./components/PersonalizedTopics";
+import PersonalizedErrors from "./components/PersonalizedErrors";
+import ErrorReviewSession from "./components/ErrorReviewSession";
 import InstructionModule from "./components/InstructionModule";
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
   const [screen, setScreen] = useState("home");
   const [topicOptions, setTopicOptions] = useState([]);
   const [selectedTopics, setSelectedTopics] = useState([]);
+  const [errorOptions, setErrorOptions] = useState([]);
+  const [selectedErrors, setSelectedErrors] = useState([]);
   const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
   const [instruction, setInstruction] = useState("");
 
@@ -59,9 +63,9 @@ function App() {
             setScreen("instruction");
           }}
           storeInstruction={(text) => setInstruction(text)}
-          startPersonalized={(topics) => {
-            setTopicOptions(topics);
-            setScreen("personalized-topics");
+          startPersonalized={(errs) => {
+            setErrorOptions(errs);
+            setScreen("personalized-errors");
           }}
           home={() => setScreen("home")}
         />
@@ -103,6 +107,31 @@ function App() {
                 setModule("personalized");
                 setScreen("practice");
               });
+          }}
+          home={() => setScreen("home")}
+        />
+      );
+    case "personalized-errors":
+      return (
+        <PersonalizedErrors
+          errors={errorOptions}
+          onNext={(list) => {
+            setSelectedErrors(list);
+            setScreen("error-review");
+          }}
+          home={() => setScreen("home")}
+        />
+      );
+    case "error-review":
+      return (
+        <ErrorReviewSession
+          user={user}
+          language={language}
+          cefr={cefr}
+          errors={selectedErrors}
+          onComplete={(correct) => {
+            setSessionStats({ correct, total: selectedErrors.length });
+            setScreen("summary");
           }}
           home={() => setScreen("home")}
         />

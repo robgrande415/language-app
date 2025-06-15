@@ -36,6 +36,11 @@ class Error(db.Model):
     sentence_id = db.Column(db.Integer, db.ForeignKey('sentence.id'), nullable=False)
     error_text = db.Column(db.Text)
     module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
+    last_reviewed = db.Column(db.DateTime, nullable=True)
+    last_reviewed_correctly = db.Column(db.DateTime, nullable=True)
+    review_count = db.Column(db.Integer, default=0)
+    correct_review_count = db.Column(db.Integer, default=0)
+
 
     sentence = db.relationship('Sentence', backref=db.backref('errors', lazy=True))
     module = db.relationship('Module', backref=db.backref('errors', lazy=True))

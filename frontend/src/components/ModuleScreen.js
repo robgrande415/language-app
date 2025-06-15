@@ -62,9 +62,9 @@ function ModuleScreen({
 
   const personalized = () => {
     axios
-      .post('/personalized/topics', { user_id: user.id, language })
+      .post('/personalized/errors', { user_id: user.id, language })
       .then(res => {
-        startPersonalized(res.data.topics || []);
+        startPersonalized(res.data.errors || []);
       });
   };
 
