@@ -104,13 +104,6 @@ def instruction():
     return jsonify({"instruction": text})
 
 
-def generate_sentence_prompt(cefr, target_language, module):
-    return (
-        f"Generate a sentence in English for a student at the {cefr} level to translate into {target_language}. Randomize the topic."
-        f"The sentence in {target_language} should cover the topic of: {module}."
-    )
-
-
 def generate_batch_prompt(cefr, target_language, module):
     return (
         f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. "
@@ -261,30 +254,6 @@ def submit_sentence():
     )
 
 
-@api_blueprint.route("/sentence/followup", methods=["POST"])
-def followup():
-    data = request.json
-    error_text = data["error"]
-    cefr = data["cefr"]
-    language = data["language"]
-    module = data["module"]
-    prompt = (
-        f"Generate a sentence in English for a student at the {cefr} level to translate into {language}. "
-        f"Focus on the following error: {error_text}."
-        f"The sentence should cover the topic of: {module}."
-    )
-    current_app.logger.info("OpenAI prompt: %s", prompt)
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    current_app.logger.info(
-        "OpenAI response: %s", response.choices[0].message.content.strip()
-    )
-    text = response.choices[0].message.content.strip()
-    return jsonify({"sentence": text})
-
-
 @api_blueprint.route("/errors/save", methods=["POST"])
 def save_errors():
     data = request.json
@@ -383,35 +352,6 @@ def export_errors(user_id):
         as_attachment=True,
         download_name="errors.csv",
     )
-
-@api_blueprint.route("/personalized/topics", methods=["POST"])
-def personalized_topics():
-    data = request.json
-    user_id = data.get("user_id")
-    language = data.get("language")
-    errors = (
-        db.session.query(Error.error_text)
-        .join(Sentence, Error.sentence_id == Sentence.id)
-        .join(Module, Error.module_id == Module.id)
-        .filter(Sentence.user_id == user_id, Module.language == language)
-        .order_by(Sentence.timestamp.desc())
-        .limit(20)
-        .all()
-    )
-    texts = [e[0] for e in errors]
-    if not texts:
-        return jsonify({"topics": []})
-    prompt = "Here are some student errors:\n" + "\n".join(texts) + "\nSummarize the 5 most common error topics as a numbered list."
-    current_app.logger.info("OpenAI prompt: %s", prompt)
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    current_app.logger.info(
-        "OpenAI response: %s", response.choices[0].message.content.strip()
-    )
-    lines = [re.sub(r"^\d+[\).]\s*", "", l).strip() for l in response.choices[0].message.content.strip().splitlines() if l.strip()]
-    return jsonify({"topics": lines[:5]})
 
 @api_blueprint.route("/personalized/preload", methods=["POST"])
 def personalized_preload():
