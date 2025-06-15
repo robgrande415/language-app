@@ -54,6 +54,28 @@ def add_module():
     return jsonify({"id": module.id, "name": module.name, "language": module.language})
 
 
+@api_blueprint.route("/instruction", methods=["POST"])
+def instruction():
+    data = request.json
+    module = data.get("module")
+    language = data.get("language")
+    if not module:
+        return jsonify({"error": "module required"}), 400
+    prompt = f"Provide a short instructional module about {module}."
+    if language:
+        prompt += f" Respond in {language}."
+    current_app.logger.info("OpenAI prompt: %s", prompt)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
+    )
+    text = response.choices[0].message.content.strip()
+    return jsonify({"instruction": text})
+
+
 def generate_sentence_prompt(cefr, target_language, module):
     return (
         f"Generate a sentence in English for a student at the {cefr} level to translate into {target_language}. Randomize the topic."

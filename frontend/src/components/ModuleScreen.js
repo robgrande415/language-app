@@ -10,12 +10,14 @@ function ModuleScreen({
   questionCount,
   setQuestionCount,
   next,
+  showInstruction,
   startPersonalized,
   home,
 }) {
   const [modules, setModules] = useState([]);
   const [search, setSearch] = useState("");
   const [scores, setScores] = useState({});
+  const [withInstruction, setWithInstruction] = useState(false);
 
   useEffect(() => {
     if (language) {
@@ -42,7 +44,17 @@ function ModuleScreen({
     setModule(m);
     axios
       .post("/sentence/preload", { language, cefr, module: m })
-      .then(() => next());
+      .then(() => {
+        if (withInstruction) {
+          axios
+            .post("/instruction", { language, module: m })
+            .then((res) => {
+              showInstruction(res.data.instruction || "");
+            });
+        } else {
+          next();
+        }
+      });
   };
 
   const personalized = () => {
@@ -87,6 +99,16 @@ function ModuleScreen({
               }
             }}
           />
+        </label>
+      </div>
+      <div style={{ margin: "1rem 0" }}>
+        <label>
+          <input
+            type="checkbox"
+            checked={withInstruction}
+            onChange={() => setWithInstruction(!withInstruction)}
+          />{' '}
+          Start with instruction
         </label>
       </div>
       <input

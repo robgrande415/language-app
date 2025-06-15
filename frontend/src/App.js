@@ -7,6 +7,7 @@ import PracticeSession from "./components/PracticeSession";
 import SessionSummary from "./components/SessionSummary";
 import ExportPage from "./components/ExportPage";
 import PersonalizedTopics from "./components/PersonalizedTopics";
+import InstructionModule from "./components/InstructionModule";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -18,6 +19,7 @@ function App() {
   const [topicOptions, setTopicOptions] = useState([]);
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
+  const [instruction, setInstruction] = useState("");
 
   const login = (selectedUser) => {
     setUser(selectedUser);
@@ -47,10 +49,22 @@ function App() {
           questionCount={questionCount}
           setQuestionCount={setQuestionCount}
           next={() => setScreen("practice")}
+          showInstruction={(text) => {
+            setInstruction(text);
+            setScreen("instruction");
+          }}
           startPersonalized={(topics) => {
             setTopicOptions(topics);
             setScreen("personalized-topics");
           }}
+          home={() => setScreen("home")}
+        />
+      );
+    case "instruction":
+      return (
+        <InstructionModule
+          text={instruction}
+          next={() => setScreen("practice")}
           home={() => setScreen("home")}
         />
       );
