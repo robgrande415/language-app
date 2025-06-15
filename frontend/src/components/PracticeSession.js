@@ -71,6 +71,7 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
     <div style={{ padding: '2rem' }}>
       {showModal && (
         <div
+          onClick={() => setShowModal(false)}  // ← added
           style={{
             position: 'fixed',
             top: 0,
@@ -85,16 +86,37 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
           }}
         >
           <div
+            onClick={(e) => e.stopPropagation()} 
             style={{
+              position: 'relative',
               background: 'white',
               padding: '1rem',
               maxWidth: '80%',
               maxHeight: '80%',
               overflow: 'auto',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
             }}
           >
+            {/* X button in top right */}
+            <button
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute',
+                top: '0.5rem',
+                right: '0.5rem',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                lineHeight: '1',
+              }}
+              aria-label="Close"
+            >
+              ×
+            </button>
+
             <ReactMarkdown>{instruction}</ReactMarkdown>
-            <button onClick={() => setShowModal(false)}>Close</button>
           </div>
         </div>
       )}
