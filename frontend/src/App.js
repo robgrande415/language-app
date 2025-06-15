@@ -7,7 +7,6 @@ import PracticeSession from "./components/PracticeSession";
 import SessionSummary from "./components/SessionSummary";
 import ExportPage from "./components/ExportPage";
 import PersonalizedTopics from "./components/PersonalizedTopics";
-import PersonalizedErrors from "./components/PersonalizedErrors";
 import ErrorReviewSession from "./components/ErrorReviewSession";
 import InstructionModule from "./components/InstructionModule";
 
