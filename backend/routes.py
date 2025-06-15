@@ -271,12 +271,13 @@ def export_session(user_id):
     )
     for s in sentences:
         explanation = s.openai_response.replace("\n", " ")
+        corrected = s.openai_response.split('.')[1] if (s.openai_response and len(s.openai_response.split('.')) > 1) else ""
         writer.writerow(
             [
                 s.timestamp,
                 s.english_text,
                 s.user_translation,
-                s.openai_response.splitlines()[1] if s.openai_response else "",
+                corrected,
                 explanation,
                 s.module.name,
                 s.module.language,
