@@ -7,6 +7,7 @@ import re
 import random
 from dotenv import load_dotenv
 from flask_cors import cross_origin
+from collections import defaultdict
 
 from models import db, User, Module, Sentence, Error, ModuleResult
 
@@ -132,22 +133,24 @@ def submit_sentence():
         ""
         #"Ex. "
     )
-    prompt = (
-        "Correct these, ignoring spelling errors.\n"
-        "Respond in the format: \n"
-        "<original french sentence> \n"
-        "<correct french sentence with only the corrections in bold>\n"
-        "<list of corrections with quick explanations, newline delimited>"
-        "\n"
-        "Ex. Our technical team is developing a secure digital portal for the bank’s lending services. - Notre equipe technique est en train de développer un interface digital securisé pour les services de prêt de la banque\n"
-        "\n"
-        "Notre equipe technique est en train de développer *une* interface *numérique* *sécurisée* pour les services de prêt de la banque\n"
-        "Explanation:\n"
-        "interface is feminine → une \n"
-        "digital → numérique is preferred in formal/technical French\n"
-        "securisé → sécurisée for feminine agreement"
-        )
-    prompt = f"{prompt}"
+
+    prompt = f"""
+            Correct these, ignoring spelling errors.
+            Respond in the format:
+            <original {language} sentence>
+            <correct {language} sentence with only the corrections in bold>
+            <list of corrections with quick explanations, newline delimited>
+            If the response is correct, simply respond with "No corrections needed"
+
+            Ex. Our technical team is developing a secure digital portal for the bank’s lending services. - Notre equipe technique est en train de développer un interface digital securisé pour les services de prêt de la banque
+
+            Notre equipe technique est en train de développer *une* interface *numérique* *sécurisée* pour les services de prêt de la banque
+            Explanation:
+            interface is feminine → une
+            digital → numérique is preferred in formal/technical French
+            securisé → sécurisée for feminine agreement
+            """
+
     user_message = f"{english} - {translation}."
     full_prompt = prompt + "\n New submission \n" + user_message
     current_app.logger.info("OpenAI prompt: %s", full_prompt)
@@ -390,11 +393,10 @@ def module_results(user_id, language):
         .order_by(ModuleResult.timestamp.desc())
         .all()
     )
-    data = {}
+    data = defaultdict(list)
+
     for res, name in rows:
-        arr = data.setdefault(name, [])
-        if not arr or arr[-1] != res.score:
-            arr.append(res.score)
-    for k in data:
-        data[k] = data[k][:3]
-    return jsonify(data)
+        if len(data[name]) < 3:
+            data[name].append(res.score)
+
+    return jsonify(dict(data))
