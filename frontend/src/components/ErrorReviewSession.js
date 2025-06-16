@@ -8,6 +8,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
   const [response, setResponse] = useState('');
   const [stage, setStage] = useState('question');
   const [correctCount, setCorrectCount] = useState(0);
+  const [correct, setCorrect] = useState(null);
 
   const currentError = errors[index];
 
@@ -41,6 +42,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
         if (res.data.correct === 1) {
           setCorrectCount(c => c + 1);
         }
+        setCorrect(res.data.correct === 1);
         setStage('result');
       });
   };
@@ -52,6 +54,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
       setIndex(i => i + 1);
       setAnswer('');
       setResponse('');
+      setCorrect(null);
       setStage('question');
     }
   };
@@ -70,6 +73,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
       )}
       {stage === 'result' && (
         <>
+          <h3>{correct ? 'Correct! 🎉' : 'Incorrect'}</h3>
           <pre>{response}</pre>
           <button onClick={next}>Next</button>
         </>
