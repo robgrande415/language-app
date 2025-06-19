@@ -10,6 +10,16 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
   const [correctCount, setCorrectCount] = useState(0);
   const [correct, setCorrect] = useState(null);
 
+  const toggleAssessment = () => {
+    if (correct === null) return;
+    if (correct) {
+      setCorrectCount(c => Math.max(0, c - 1));
+    } else {
+      setCorrectCount(c => c + 1);
+    }
+    setCorrect(!correct);
+  };
+
   const currentError = errors[index];
 
   useEffect(() => {
@@ -73,7 +83,17 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
       )}
       {stage === 'result' && (
         <>
-          <h3>{correct ? 'Correct! 🎉' : 'Incorrect'}</h3>
+          <h3>
+            {correct ? 'Correct! 🎉' : 'Incorrect'}
+            {correct !== null && (
+              <button
+                onClick={toggleAssessment}
+                style={{ marginLeft: '1rem', fontSize: '0.8rem' }}
+              >
+                Change assessment
+              </button>
+            )}
+          </h3>
           <pre>{response}</pre>
           <button onClick={next}>Next</button>
         </>
