@@ -237,8 +237,8 @@ def submit_sentence():
         f"Module topic: {module_name}.\n"
         f"English sentence: {english}\n"
         f"Learner translation: {translation}\n"
-        "Ignoring spelling or vocabulary mistakes, did the learner correctly "
-        "convey the meaning and use the module concept? Respond only with 1 or 0."
+        "Ignoring all mistakes outside of {module_name} (ex. ignoring spelling, prepositions, number agreement, and articles), did the learner correctly "
+        "convey the meaning and use the module concept {module_name}? Respond only with 1 (for yes) or 0 (for no)."
     )
     current_app.logger.info("OpenAI prompt: %s", judge_prompt)
     judge_resp = client.chat.completions.create(
