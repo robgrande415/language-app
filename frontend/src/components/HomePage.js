@@ -21,17 +21,26 @@ const createUser = () => {
 };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       <h2>Select User</h2>
       <ul>
-        {users.map(u => (
+        {users.map((u) => (
           <li key={u.id}>
-            <button onClick={() => onLogin(u)}>{u.name}</button>
+            <button className="btn-secondary" onClick={() => onLogin(u)}>
+              {u.name}
+            </button>
           </li>
         ))}
       </ul>
-      <input value={name} onChange={e => setName(e.target.value)} placeholder="New user" />
-      <button onClick={createUser}>Create</button>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="New user"
+        style={{ marginRight: '0.5rem' }}
+      />
+      <button className="btn-primary" onClick={createUser}>
+        Create
+      </button>
     </div>
   );
 }

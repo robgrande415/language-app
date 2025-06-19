@@ -69,100 +69,126 @@ function ModuleScreen({
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>Select Module</h2>
-      <div>
-        {["A1", "A2", "B1", "B2", "C1", "C2"].map((lvl) => (
-          <label key={lvl} style={{ marginRight: "1rem" }}>
-            <input
-              type="radio"
-              checked={cefr === lvl}
-              onChange={() => setCefr(lvl)}
-            />{" "}
-            {lvl}
-          </label>
-        ))}
+    <>
+      <div className="header">
+        <div className="container">
+          <h1>Select Module</h1>
+        </div>
       </div>
-      <div style={{ margin: "1rem 0" }}>
-        <label>
-          Number of questions:{" "}
-          <input
-            type="number"
-            min="1"
-            value={questionCount === null ? "" : questionCount}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === "") {
-                setQuestionCount(null); // allow clearing
-              } else {
-                const parsed = parseInt(value);
-                if (!isNaN(parsed)) {
-                  setQuestionCount(parsed);
-                }
-              }
-            }}
-          />
-        </label>
-      </div>
-      <div style={{ margin: "1rem 0" }}>
-        <label>
-          <input
-            type="checkbox"
-            checked={withInstruction}
-            onChange={() => setWithInstruction(!withInstruction)}
-          />{' '}
-          Start with instruction
-        </label>
-      </div>
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search"
-      />
-      <button onClick={addModule} style={{ marginLeft: "1rem" }}>
-        Add Module
-      </button>
-      <ul>
-        {filtered.map((m) => (
-          <li key={m} style={{ display: "flex", alignItems: "center" }}>
-            <button onClick={() => chooseModule(m)} style={{ marginRight: "0.5rem" }}>{m}</button>
-            <div style={{ display: "flex" }}>
-              {(scores[m] || []).map((s, idx) => {
-                const pct = Math.round(s * 100);
-                let bg = "red";
-                if (pct > 80) bg = "green";
-                else if (pct >= 60) bg = "orange";
-                return (
-                  <span
-                    key={idx}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      backgroundColor: bg,
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginLeft: 4,
-                      fontSize: 12,
-                    }}
-                  >
-                    {pct}
-                  </span>
-                );
-              })}
+      <div className="main-content">
+        <div className="sidebar">
+          <div className="sidebar-section">
+            <div className="sidebar-title">Level</div>
+            <div className="level-buttons">
+              {["A1", "A2", "B1", "B2", "C1", "C2"].map((lvl) => (
+                <button
+                  key={lvl}
+                  className={`level-btn ${cefr === lvl ? "active" : ""}`}
+                  onClick={() => setCefr(lvl)}
+                >
+                  {lvl}
+                </button>
+              ))}
             </div>
-          </li>
-        ))}
-      </ul>
-      <div style={{ marginTop: "1rem" }}>
-        <button onClick={personalized} style={{ marginRight: "1rem" }}>
-          Personalized Module based on Past errors
-        </button>
-        <button onClick={home}>Home</button>
+          </div>
+          <div className="sidebar-section">
+            <div className="input-group">
+              <label htmlFor="questions">Number of questions</label>
+              <input
+                id="questions"
+                type="number"
+                min="1"
+                value={questionCount === null ? "" : questionCount}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    setQuestionCount(null);
+                  } else {
+                    const parsed = parseInt(value);
+                    if (!isNaN(parsed)) setQuestionCount(parsed);
+                  }
+                }}
+              />
+            </div>
+            <div className="checkbox-group">
+              <input
+                type="checkbox"
+                id="instruction"
+                checked={withInstruction}
+                onChange={() => setWithInstruction(!withInstruction)}
+              />
+              <label htmlFor="instruction">Start with instruction</label>
+            </div>
+          </div>
+          <div className="sidebar-section">
+            <div className="sidebar-title">Add Module</div>
+            <input
+              type="text"
+              className="search-bar"
+              placeholder="Search modules..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button className="add-module-btn" onClick={addModule}>
+              Add Module
+            </button>
+          </div>
+        </div>
+        <div className="modules-section">
+          {filtered.map((m) => {
+            const list = scores[m] || [];
+            const pct = list.length ? Math.round(list[list.length - 1] * 100) : 0;
+            let progressClass = "progress-0";
+            if (pct >= 100) progressClass = "progress-100";
+            else if (pct >= 80) progressClass = "progress-80";
+            else if (pct >= 60) progressClass = "progress-60";
+            else if (pct >= 20) progressClass = "progress-20";
+            return (
+              <div
+                key={m}
+                className="module-item"
+                onClick={() => chooseModule(m)}
+              >
+                <div className="module-header">
+                  <div className="module-name">{m}</div>
+                </div>
+                <div className="module-meta">
+                  <div className="progress-info">
+                    Progress: {pct === 0 ? "Not started" : pct === 100 ? "Complete" : `${pct}%`}
+                  </div>
+                </div>
+                <div className="progress-bar">
+                  <div className={`progress-fill ${progressClass}`}></div>
+                </div>
+                {list.length > 0 && (
+                  <div className="scores">
+                    {list.map((s, idx) => {
+                      const val = Math.round(s * 100);
+                      let cls = "score-0";
+                      if (val >= 100) cls = "score-100";
+                      else if (val >= 80) cls = "score-80";
+                      else if (val >= 60) cls = "score-60";
+                      else if (val >= 20) cls = "score-20";
+                      return (
+                        <div key={idx} className={`score ${cls}`}>{val}</div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+      <div className="bottom-section">
+        <div className="action-buttons">
+          <button className="btn-primary" onClick={personalized}>
+            Personalized Module based on Past errors
+          </button>
+          <button className="btn-secondary" onClick={home}>Home</button>
+        </div>
+      </div>
+    </>
   );
 }
 

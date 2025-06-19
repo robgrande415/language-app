@@ -7,13 +7,19 @@ function LanguageSelector({ onSelect, next, goExport, home }) {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       <h2>Select Language</h2>
-      <button onClick={() => choose('French')}>French</button>
-      <button onClick={() => choose('Spanish')}>Spanish</button>
+      <button className="btn-secondary" onClick={() => choose('French')} style={{ marginRight: '0.5rem' }}>
+        French
+      </button>
+      <button className="btn-secondary" onClick={() => choose('Spanish')}>
+        Spanish
+      </button>
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={goExport} style={{ marginRight: '1rem' }}>Session Export</button>
-        <button onClick={home}>Home</button>
+        <button className="btn-primary" onClick={goExport} style={{ marginRight: '1rem' }}>
+          Session Export
+        </button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );

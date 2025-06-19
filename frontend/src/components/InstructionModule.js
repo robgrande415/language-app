@@ -10,17 +10,24 @@ function InstructionModule({ text, next, home, regenerate }) {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       <h2>Instruction</h2>
       <div style={{ marginBottom: '1rem' }}>
         <ReactMarkdown>{text}</ReactMarkdown>
       </div>
       <div>
-        <button onClick={handleRegenerate} style={{ marginRight: '1rem' }} disabled={loading}>
+        <button
+          className="btn-secondary"
+          onClick={handleRegenerate}
+          style={{ marginRight: '1rem' }}
+          disabled={loading}
+        >
           {loading ? 'Regenerating...' : 'Regenerate'}
         </button>
-        <button onClick={next} style={{ marginRight: '1rem' }}>Next</button>
-        <button onClick={home}>Home</button>
+        <button className="btn-primary" onClick={next} style={{ marginRight: '1rem' }}>
+          Next
+        </button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );

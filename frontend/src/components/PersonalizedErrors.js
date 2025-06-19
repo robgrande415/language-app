@@ -14,7 +14,7 @@ function PersonalizedErrors({ errors, onNext, home }) {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       <h2>Select Errors</h2>
       <table>
         <thead>
@@ -47,8 +47,8 @@ function PersonalizedErrors({ errors, onNext, home }) {
         </tbody>
       </table>
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={next} style={{ marginRight: '1rem' }}>Start</button>
-        <button onClick={home}>Home</button>
+        <button className="btn-primary" onClick={next} style={{ marginRight: '1rem' }}>Start</button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );

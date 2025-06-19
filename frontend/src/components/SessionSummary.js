@@ -69,7 +69,7 @@ function SessionSummary({ restart, home, user, stats, module, language }) {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       <h2>🎉 Congrats!</h2>
       <p>You’ve completed the module.</p>
       <p>Score: {stats.correct}/{stats.total} ({percent}%)</p>
@@ -80,7 +80,7 @@ function SessionSummary({ restart, home, user, stats, module, language }) {
           placeholder="Filename (e.g., my-session.csv)"
           style={{ marginRight: '1rem' }}
         />
-        <button onClick={download}>Download CSV</button>
+        <button className="btn-primary" onClick={download}>Download CSV</button>
       </div>
       <div style={{ marginTop: '1rem' }}>
         <input
@@ -89,7 +89,7 @@ function SessionSummary({ restart, home, user, stats, module, language }) {
           placeholder="Errors filename (e.g., errors.csv)"
           style={{ marginRight: '1rem' }}
         />
-        <button onClick={downloadErrors}>Download Errors</button>
+        <button className="btn-primary" onClick={downloadErrors}>Download Errors</button>
       </div>
       <div style={{ marginTop: '1rem' }}>
         <input
@@ -98,11 +98,11 @@ function SessionSummary({ restart, home, user, stats, module, language }) {
           placeholder="Vocab filename (e.g., vocab.csv)"
           style={{ marginRight: '1rem' }}
         />
-        <button onClick={downloadVocab}>Download Vocab</button>
+        <button className="btn-primary" onClick={downloadVocab}>Download Vocab</button>
       </div>
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={restart} style={{ marginRight: '1rem' }}>Continue</button>
-        <button onClick={home}>Home</button>
+        <button className="btn-primary" onClick={restart} style={{ marginRight: '1rem' }}>Continue</button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );
