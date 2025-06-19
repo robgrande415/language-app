@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 
-function PracticeSession({ user, language, cefr, module, instruction, questionCount, onComplete, home }) {
+function PracticeSession({ user, language, cefr, module, moduleDescription, instruction, questionCount, onComplete, home }) {
   const [sentence, setSentence] = useState('');
   const [answer, setAnswer] = useState('');
   const [response, setResponse] = useState('');
@@ -31,7 +31,7 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
   }, []);
 
   const fetchSentence = () => {
-    axios.post('/sentence/generate', { language, cefr, module })
+    axios.post('/sentence/generate', { language, cefr, module, module_description: moduleDescription })
       .then(res => {
         setSentence(res.data.sentence);
         setStage('question');

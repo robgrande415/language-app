@@ -20,6 +20,7 @@ function App() {
   const [chapter, setChapter] = useState(null);
   const [cefr, setCefr] = useState("A1");
   const [module, setModule] = useState("");
+  const [moduleDescription, setModuleDescription] = useState("");
   const [questionCount, setQuestionCount] = useState(5);
   const [screen, setScreen] = useState("home");
   const [topicOptions, setTopicOptions] = useState([]);
@@ -88,6 +89,7 @@ function App() {
           cefr={cefr}
           setCefr={setCefr}
           setModule={setModule}
+          setModuleDescription={setModuleDescription}
           questionCount={questionCount}
           setQuestionCount={setQuestionCount}
           next={() => setScreen("practice")}
@@ -120,6 +122,7 @@ function App() {
           language={language}
           cefr={cefr}
           module={module}
+          moduleDescription={moduleDescription}
           instruction={instruction}
           questionCount={questionCount}
           onComplete={(correct) => {

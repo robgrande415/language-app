@@ -9,6 +9,7 @@ function ModuleScreen({
   cefr,
   setCefr,
   setModule,
+  setModuleDescription,
   questionCount,
   setQuestionCount,
   next,
@@ -23,6 +24,7 @@ function ModuleScreen({
   const [scores, setScores] = useState({});
   const [withInstruction, setWithInstruction] = useState(false);
   const [modal, setModal] = useState(null);
+  const [formModal, setFormModal] = useState(null);
 
   useEffect(() => {
     if (chapter) {
@@ -38,18 +40,14 @@ function ModuleScreen({
   );
 
   const addModule = () => {
-    const name = window.prompt('New module name');
-    if (!name) return;
-    const description = window.prompt('Description');
-    axios.post('/modules', { name, language, chapter_id: chapter.id, description }).then((res) => {
-      setModules([...modules, { id: res.data.id, name, description }]);
-    });
+    setFormModal({ id: null, name: "", description: "" });
   };
 
   const chooseModule = (m) => {
     setModule(m.name);
+    setModuleDescription(m.description || "");
     axios
-      .post("/sentence/preload", { language, cefr, module: m.name })
+      .post("/sentence/preload", { language, cefr, module: m.name, module_description: m.description })
       .then(() => {
         axios
           .post("/instruction", { language, module: m.name })
@@ -128,62 +126,70 @@ function ModuleScreen({
         Add Module
       </button>
       <div style={{ display: "flex", flexWrap: "wrap", marginTop: "1rem" }}>
-        {filtered.map((m) => (
-          <div
-            key={m.id}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: 4,
-              padding: "1rem",
-              margin: "0.5rem",
-              width: 200,
-            }}
-          >
-            <h4>{m.name}</h4>
-            <p>
-              {(m.description || "").slice(0, 80)}
-              {m.description && m.description.length > 80 && (
-                <>
-                  ...{' '}
-                  <span
-                    style={{ color: "blue", cursor: "pointer" }}
-                    onClick={() => setModal(m)}
-                  >
-                    see more
-                  </span>
-                </>
+        {filtered.map((m) => {
+          const moduleScores = scores[m.name] || [];
+          const avg = moduleScores.length > 0 ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length : null;
+          return (
+            <div
+              key={m.id}
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: 4,
+                padding: "1rem",
+                margin: "0.5rem",
+                width: 300,
+              }}
+            >
+              <div className="module-header">
+                <div className="module-name" style={{ fontWeight: "bold" }}>{m.name}</div>
+              </div>
+              <div className="module-meta" style={{ marginBottom: "0.5rem" }}>
+                {avg !== null && (
+                  <div className="progress-info">Progress: {avg.toFixed(0)}%</div>
+                )}
+              </div>
+              {avg !== null && (
+                <div className="progress-bar" style={{ height: 10, background: "#eee", marginBottom: "0.5rem" }}>
+                  <div className="progress-fill" style={{ width: `${avg}%`, background: "#ff9500", height: "100%" }} />
+                </div>
               )}
-            </p>
-            <button onClick={() => chooseModule(m)} style={{ marginRight: '0.5rem' }}>Select</button>
-            <button
-              onClick={() => {
-                const name = window.prompt('New name', m.name);
-                if (name) {
-                  const description = window.prompt('Description', m.description || '');
-                  axios
-                    .put(`/modules/${m.id}`, { name, description })
-                    .then(() => {
-                      setModules(modules.map(x => x.id === m.id ? { ...x, name, description } : x));
+              {moduleScores.length > 0 && (
+                <div className="scores" style={{ display: "flex", marginBottom: "0.5rem" }}>
+                  {moduleScores.map((s, idx) => (
+                    <div key={idx} className="score" style={{ marginRight: 4 }}>{s.toFixed(0)}</div>
+                  ))}
+                </div>
+              )}
+              <p>
+                {(m.description || "").slice(0, 80)}
+                {m.description && m.description.length > 80 && (
+                  <>
+                    ...{' '}
+                    <span
+                      style={{ color: "blue", cursor: "pointer" }}
+                      onClick={() => setModal(m)}
+                    >
+                      see more
+                    </span>
+                  </>
+                )}
+              </p>
+              <button onClick={() => chooseModule(m)} style={{ marginRight: '0.5rem' }}>Select</button>
+              <button onClick={() => setFormModal(m)} style={{ marginRight: '0.5rem' }}>Edit</button>
+              <button
+                onClick={() => {
+                  if (window.confirm('Delete module?')) {
+                    axios.delete(`/modules/${m.id}`).then(() => {
+                      setModules(modules.filter((x) => x.id !== m.id));
                     });
-                }
-              }}
-              style={{ marginRight: '0.5rem' }}
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm('Delete module?')) {
-                  axios.delete(`/modules/${m.id}`).then(() => {
-                    setModules(modules.filter(x => x.id !== m.id));
-                  });
-                }
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          );
+        })}
       </div>
       {modal && (
         <div
@@ -207,6 +213,94 @@ function ModuleScreen({
             <h3>{modal.name}</h3>
             <ReactMarkdown>{modal.description}</ReactMarkdown>
             <button onClick={() => setModal(null)}>Close</button>
+          </div>
+        </div>
+      )}
+      {formModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setFormModal(null)}
+        >
+          <div
+            style={{ background: "white", padding: "1rem", maxWidth: 400 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>{formModal.id ? "Edit Module" : "Add Module"}</h3>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <input
+                type="text"
+                placeholder="Name"
+                value={formModal.name}
+                onChange={(e) =>
+                  setFormModal({ ...formModal, name: e.target.value })
+                }
+              />
+            </div>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <textarea
+                rows={5}
+                placeholder="Description (markdown allowed)"
+                value={formModal.description}
+                onChange={(e) =>
+                  setFormModal({ ...formModal, description: e.target.value })
+                }
+              />
+            </div>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>Preview:</strong>
+              <ReactMarkdown>{formModal.description}</ReactMarkdown>
+            </div>
+            <button
+              onClick={() => {
+                if (!formModal.name) return;
+                if (formModal.id) {
+                  axios
+                    .put(`/modules/${formModal.id}`, {
+                      name: formModal.name,
+                      description: formModal.description,
+                    })
+                    .then(() => {
+                      setModules(
+                        modules.map((x) =>
+                          x.id === formModal.id
+                            ? { ...x, name: formModal.name, description: formModal.description }
+                            : x
+                        )
+                      );
+                      setFormModal(null);
+                    });
+                } else {
+                  axios
+                    .post("/modules", {
+                      name: formModal.name,
+                      language,
+                      chapter_id: chapter.id,
+                      description: formModal.description,
+                    })
+                    .then((res) => {
+                      setModules([
+                        ...modules,
+                        { id: res.data.id, name: formModal.name, description: formModal.description },
+                      ]);
+                      setFormModal(null);
+                    });
+                }
+              }}
+              style={{ marginRight: "0.5rem" }}
+            >
+              Save
+            </button>
+            <button onClick={() => setFormModal(null)}>Cancel</button>
           </div>
         </div>
       )}

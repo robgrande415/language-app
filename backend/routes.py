@@ -203,15 +203,16 @@ def instruction():
     return jsonify({"instruction": text})
 
 
-def generate_batch_prompt(cefr, target_language, module):
+def generate_batch_prompt(cefr, target_language, module, module_description=""):
     return (
-        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. "
-        f"The sentences should cover the topic of: {module}. Number each sentence."
+        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. \n"
+        f"The sentences should cover the topic of: {module}. More details about the module: {module_description}.\n"
+        f"Number each sentence."
     )
 
 
-def generate_sentence_batch(cefr, target_language, module):
-    prompt = generate_batch_prompt(cefr, target_language, module)
+def generate_sentence_batch(cefr, target_language, module, module_description=""):
+    prompt = generate_batch_prompt(cefr, target_language, module, module_description)
     current_app.logger.info("OpenAI prompt: %s", prompt)
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -233,7 +234,12 @@ def generate_sentence_batch(cefr, target_language, module):
 def preload_sentences():
     data = request.json
     key = (data["language"], data["module"], data["cefr"])
-    sentences = generate_sentence_batch(data["cefr"], data["language"], data["module"])
+    sentences = generate_sentence_batch(
+        data["cefr"],
+        data["language"],
+        data["module"],
+        data.get("module_description", ""),
+    )
     SENTENCE_BATCHES[key] = sentences
     return jsonify({"count": len(sentences)})
 
@@ -244,7 +250,12 @@ def generate_sentence():
     key = (data["language"], data["module"], data["cefr"])
     batch = SENTENCE_BATCHES.get(key)
     if not batch:
-        batch = generate_sentence_batch(data["cefr"], data["language"], data["module"])
+        batch = generate_sentence_batch(
+            data["cefr"],
+            data["language"],
+            data["module"],
+            data.get("module_description", ""),
+        )
         SENTENCE_BATCHES[key] = batch
     if not batch:
         return jsonify({"sentence": ""})
