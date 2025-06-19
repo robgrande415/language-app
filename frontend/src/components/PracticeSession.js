@@ -188,20 +188,27 @@ const submit = () => {
             )}
           </h3>
           <div style={{ whiteSpace: 'pre-wrap' }}>
-            {response.split(/(\b)/).map((tok, idx) => {
-              const clean = tok.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'-]/g, '');
-              if (!clean) return tok;
-              const selected = vocab.includes(clean);
+            {response.split(/(\s+|[.,!?;:"“”«»()])/).map((tok, idx) => {
+              const visibleWord = tok;
+
+              // Match words including accents and hyphens (but not trailing punctuation or asterisks)
+              const cleaned = tok
+                .replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ'-]+/, '')  // remove leading non-letter
+                .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'-]+$/, ''); // remove trailing non-letter
+
+              if (!cleaned) return tok;
+
+              const selected = vocab.includes(cleaned);
               return (
                 <span
                   key={idx}
-                  onClick={() => toggleWord(clean)}
+                  onClick={() => toggleWord(cleaned)}
                   style={{
                     backgroundColor: selected ? 'lightblue' : 'transparent',
                     cursor: 'pointer',
                   }}
                 >
-                  {tok}
+                  {visibleWord}
                 </span>
               );
             })}
