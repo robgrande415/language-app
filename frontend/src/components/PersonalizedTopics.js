@@ -23,7 +23,7 @@ function PersonalizedTopics({ topics, onNext, home }) {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       <h2>Select Topics</h2>
       <ul>
         {items.map((item, idx) => (
@@ -37,11 +37,11 @@ function PersonalizedTopics({ topics, onNext, home }) {
       </ul>
       <div style={{ marginTop: '1rem' }}>
         <input value={newTopic} onChange={e => setNewTopic(e.target.value)} placeholder="Add topic" />
-        <button onClick={add} style={{ marginLeft: '0.5rem' }}>Add</button>
+        <button className="btn-secondary" onClick={add} style={{ marginLeft: '0.5rem' }}>Add</button>
       </div>
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={next} style={{ marginRight: '1rem' }}>Next</button>
-        <button onClick={home}>Home</button>
+        <button className="btn-primary" onClick={next} style={{ marginRight: '1rem' }}>Next</button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );

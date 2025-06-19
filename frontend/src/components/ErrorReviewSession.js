@@ -72,13 +72,13 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
   if (!currentError) return null;
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       {stage === 'question' && (
         <>
           <h4>Practice error:</h4>
           <p>{sentence}</p>
           <input value={answer} onChange={e => setAnswer(e.target.value)} />
-          <button onClick={submit}>Submit</button>
+          <button className="btn-primary" onClick={submit}>Submit</button>
         </>
       )}
       {stage === 'result' && (
@@ -95,12 +95,12 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
             )}
           </h3>
           <pre>{response}</pre>
-          <button onClick={next}>Next</button>
+          <button className="btn-primary" onClick={next}>Next</button>
         </>
       )}
       <div style={{ marginTop: '1rem' }}>Progress: {index}/{errors.length}</div>
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={home}>Home</button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );

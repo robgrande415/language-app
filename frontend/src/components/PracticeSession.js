@@ -95,7 +95,7 @@ const submit = () => {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
       {showModal && (
         <div
           onClick={() => setShowModal(false)}  // ← added
@@ -152,7 +152,7 @@ const submit = () => {
           <h3>Translate:</h3>
           <p>{sentence}</p>
           <input value={answer} onChange={e => setAnswer(e.target.value)} />
-          <button onClick={submit}>Submit</button>
+          <button className="btn-primary" onClick={submit}>Submit</button>
         </>
       )}
       {stage === 'result' && (
@@ -220,15 +220,15 @@ const submit = () => {
               </ul>
             </div>
           )}
-          <button onClick={nextStep}>Next</button>
+          <button className="btn-primary" onClick={nextStep}>Next</button>
         </>
       )}
       <div>Progress: {count}/{questionCount}</div>
       <div style={{ marginTop: '1rem' }}>
-        <button onClick={() => setShowModal(true)} style={{ marginRight: '1rem' }}>
+        <button className="btn-secondary" onClick={() => setShowModal(true)} style={{ marginRight: '1rem' }}>
           Instruction
         </button>
-        <button onClick={home}>Home</button>
+        <button className="btn-secondary" onClick={home}>Home</button>
       </div>
     </div>
   );
