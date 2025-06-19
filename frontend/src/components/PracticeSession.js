@@ -151,7 +151,26 @@ const submit = () => {
         <>
           <h3>Translate:</h3>
           <p>{sentence}</p>
-          <input value={answer} onChange={e => setAnswer(e.target.value)} />
+          <textarea
+            spellCheck={true}
+            value={answer}
+            onChange={e => setAnswer(e.target.value)}
+            rows={4}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              fontSize: '1rem',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              marginBottom: '1rem',
+              resize: 'vertical',
+              fontFamily: 'inherit',
+              lineHeight: '1.4',
+              WebkitUserModify: 'read-write',
+              userSelect: 'text',
+            }}
+            placeholder="Type your answer here..."
+          />
           <button onClick={submit}>Submit</button>
         </>
       )}

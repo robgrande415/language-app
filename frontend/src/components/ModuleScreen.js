@@ -129,6 +129,7 @@ function ModuleScreen({
         {filtered.map((m) => {
           const moduleScores = scores[m.name] || [];
           const avg = moduleScores.length > 0 ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length : null;
+
           return (
             <div
               key={m.id}
@@ -138,55 +139,117 @@ function ModuleScreen({
                 padding: "1rem",
                 margin: "0.5rem",
                 width: 300,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                position: "relative",
               }}
             >
-              <div className="module-header">
-                <div className="module-name" style={{ fontWeight: "bold" }}>{m.name}</div>
+              {/* Top right edit/delete */}
+              <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: "0.5rem" }}>
+                <span
+                  onClick={() => setFormModal(m)}
+                  style={{
+                    color: "#007BFF",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  Edit
+                </span>
+                <span
+                  onClick={() => {
+                    if (window.confirm('Delete module?')) {
+                      axios.delete(`/modules/${m.id}`).then(() => {
+                        setModules(modules.filter((x) => x.id !== m.id));
+                      });
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                  title="Delete"
+                >
+                  🗑️
+                </span>
               </div>
-              <div className="module-meta" style={{ marginBottom: "0.5rem" }}>
+
+              <div>
+                <div className="module-name" style={{ fontWeight: "bold", marginBottom: "0.5rem" }}>
+                  {m.name}
+                </div>
+
                 {avg !== null && (
-                  <div className="progress-info">Progress: {avg.toFixed(0)}%</div>
-                )}
-              </div>
-              {avg !== null && (
-                <div className="progress-bar" style={{ height: 10, background: "#eee", marginBottom: "0.5rem" }}>
-                  <div className="progress-fill" style={{ width: `${avg}%`, background: "#ff9500", height: "100%" }} />
-                </div>
-              )}
-              {moduleScores.length > 0 && (
-                <div className="scores" style={{ display: "flex", marginBottom: "0.5rem" }}>
-                  {moduleScores.map((s, idx) => (
-                    <div key={idx} className="score" style={{ marginRight: 4 }}>{s.toFixed(0)}</div>
-                  ))}
-                </div>
-              )}
-              <p>
-                {(m.description || "").slice(0, 80)}
-                {m.description && m.description.length > 80 && (
                   <>
-                    ...{' '}
-                    <span
-                      style={{ color: "blue", cursor: "pointer" }}
-                      onClick={() => setModal(m)}
+                    <div className="progress-info" style={{ marginBottom: "0.25rem" }}>
+                      Progress: {avg.toFixed(0)}%
+                    </div>
+                    <div
+                      className="progress-bar"
+                      style={{ height: 10, background: "#eee", marginBottom: "0.5rem" }}
                     >
-                      see more
-                    </span>
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${avg}%`,
+                          background: "#ff9500",
+                          height: "100%",
+                        }}
+                      />
+                    </div>
                   </>
                 )}
-              </p>
-              <button onClick={() => chooseModule(m)} style={{ marginRight: '0.5rem' }}>Select</button>
-              <button onClick={() => setFormModal(m)} style={{ marginRight: '0.5rem' }}>Edit</button>
-              <button
-                onClick={() => {
-                  if (window.confirm('Delete module?')) {
-                    axios.delete(`/modules/${m.id}`).then(() => {
-                      setModules(modules.filter((x) => x.id !== m.id));
-                    });
-                  }
-                }}
-              >
-                Delete
-              </button>
+
+                {moduleScores.length > 0 && (
+                  <div className="scores" style={{ display: "flex", marginBottom: "0.5rem" }}>
+                    {moduleScores.slice(-3).map((s, idx) => {
+                      let bgColor = "#ccc";
+                      if (s * 100 >= 80) bgColor = "#4CAF50";
+                      else if (s * 100 >= 60) bgColor = "#FFEB3B";
+                      else bgColor = "#F44336";
+
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: "50%",
+                            backgroundColor: bgColor,
+                            color: "#000",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 12,
+                            fontWeight: "bold",
+                            marginRight: 4,
+                          }}
+                        >
+                          {(s * 100).toFixed(0)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <p>
+                  {(m.description || "").slice(0, 80)}
+                  {m.description && m.description.length > 80 && (
+                    <>
+                      ...{" "}
+                      <span
+                        style={{ color: "blue", cursor: "pointer" }}
+                        onClick={() => setModal(m)}
+                      >
+                        see more
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Bottom right Start Study Session */}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => chooseModule(m)}>Start Study Session</button>
+              </div>
             </div>
           );
         })}
@@ -203,11 +266,20 @@ function ModuleScreen({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            zIndex: 1000,
           }}
           onClick={() => setModal(null)}
         >
           <div
-            style={{ background: "white", padding: "1rem", maxWidth: 400 }}
+            style={{
+              background: "white",
+              padding: "1rem",
+              maxWidth: 400,
+              maxHeight: "80vh",
+              overflowY: "auto",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3>{modal.name}</h3>
@@ -228,11 +300,21 @@ function ModuleScreen({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            zIndex: 1000,
           }}
           onClick={() => setFormModal(null)}
         >
           <div
-            style={{ background: "white", padding: "1rem", maxWidth: 400 }}
+            style={{
+              background: "white",
+              padding: "1rem",
+              maxWidth: 400,
+              maxHeight: "80vh",
+              overflowY: "auto",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              width: "100%",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3>{formModal.id ? "Edit Module" : "Add Module"}</h3>
@@ -254,6 +336,7 @@ function ModuleScreen({
                 onChange={(e) =>
                   setFormModal({ ...formModal, description: e.target.value })
                 }
+                style={{ width: "100%" }}
               />
             </div>
             <div style={{ marginBottom: "0.5rem" }}>
