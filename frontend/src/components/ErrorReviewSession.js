@@ -8,6 +8,17 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
   const [response, setResponse] = useState('');
   const [stage, setStage] = useState('question');
   const [correctCount, setCorrectCount] = useState(0);
+  const [correct, setCorrect] = useState(null);
+
+  const toggleAssessment = () => {
+    if (correct === null) return;
+    if (correct) {
+      setCorrectCount(c => Math.max(0, c - 1));
+    } else {
+      setCorrectCount(c => c + 1);
+    }
+    setCorrect(!correct);
+  };
 
   const currentError = errors[index];
 
@@ -41,6 +52,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
         if (res.data.correct === 1) {
           setCorrectCount(c => c + 1);
         }
+        setCorrect(res.data.correct === 1);
         setStage('result');
       });
   };
@@ -52,6 +64,7 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
       setIndex(i => i + 1);
       setAnswer('');
       setResponse('');
+      setCorrect(null);
       setStage('question');
     }
   };
@@ -70,6 +83,17 @@ function ErrorReviewSession({ user, language, cefr, errors, onComplete, home }) 
       )}
       {stage === 'result' && (
         <>
+          <h3>
+            {correct ? 'Correct! 🎉' : 'Incorrect'}
+            {correct !== null && (
+              <button
+                onClick={toggleAssessment}
+                style={{ marginLeft: '1rem', fontSize: '0.8rem' }}
+              >
+                Change assessment
+              </button>
+            )}
+          </h3>
           <pre>{response}</pre>
           <button onClick={next}>Next</button>
         </>

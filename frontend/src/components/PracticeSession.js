@@ -13,7 +13,18 @@ function PracticeSession({ user, language, cefr, module, instruction, questionCo
   const [correctCount, setCorrectCount] = useState(0);
   const [stage, setStage] = useState('question'); // 'question' or 'result'
   const [showModal, setShowModal] = useState(false);
+  const [correct, setCorrect] = useState(null);
   const [vocab, setVocab] = useState([]);
+
+  const toggleAssessment = () => {
+    if (correct === null) return;
+    if (correct) {
+      setCorrectCount(c => Math.max(0, c - 1));
+    } else {
+      setCorrectCount(c => c + 1);
+    }
+    setCorrect(!correct);
+  };
 
   useEffect(() => {
     fetchSentence();
@@ -46,6 +57,7 @@ const submit = () => {
         setCorrectCount(c => c + 1);
       }
 
+      setCorrect(res.data.correct === 1);
       setCount(c => c + 1);
       setStage('result');
     });
@@ -76,6 +88,7 @@ const submit = () => {
           setChecked([]);
           setSentenceId(null);
           setVocab([]);
+          setCorrect(null);
           fetchSentence();
         }
       });
@@ -144,6 +157,17 @@ const submit = () => {
       )}
       {stage === 'result' && (
         <>
+          <h3>
+            {correct ? 'Correct! 🎉' : 'Incorrect'}
+            {correct !== null && (
+              <button
+                onClick={toggleAssessment}
+                style={{ marginLeft: '1rem', fontSize: '0.8rem' }}
+              >
+                Change assessment
+              </button>
+            )}
+          </h3>
           <div style={{ whiteSpace: 'pre-wrap' }}>
             {response.split(/(\b)/).map((tok, idx) => {
               const clean = tok.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'-]/g, '');
