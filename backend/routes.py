@@ -13,6 +13,8 @@ from collections import defaultdict
 from models import (
     db,
     User,
+    Course,
+    Chapter,
     Module,
     Sentence,
     Error,
@@ -44,6 +46,81 @@ def users():
     return jsonify([{"id": u.id, "name": u.name} for u in users])
 
 
+@api_blueprint.route("/courses/<language>", methods=["GET"])
+def list_courses(language):
+    courses = Course.query.filter_by(language=language).all()
+    return jsonify([{"id": c.id, "name": c.name} for c in courses])
+
+
+@api_blueprint.route("/courses", methods=["POST"])
+def add_course():
+    data = request.json
+    name = data.get("name")
+    language = data.get("language")
+    if not name or not language:
+        return jsonify({"error": "name and language required"}), 400
+    course = Course(name=name, language=language)
+    db.session.add(course)
+    db.session.commit()
+    return jsonify({"id": course.id, "name": course.name})
+
+
+@api_blueprint.route("/courses/<int:course_id>", methods=["PUT", "DELETE"])
+def modify_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    if request.method == "DELETE":
+        db.session.delete(course)
+        db.session.commit()
+        return jsonify({"status": "deleted"})
+    data = request.json
+    course.name = data.get("name", course.name)
+    db.session.commit()
+    return jsonify({"id": course.id, "name": course.name})
+
+
+@api_blueprint.route("/chapters/<int:course_id>", methods=["GET"])
+def list_chapters(course_id):
+    chapters = Chapter.query.filter_by(course_id=course_id).all()
+    return jsonify([{"id": ch.id, "name": ch.name} for ch in chapters])
+
+
+@api_blueprint.route("/chapters", methods=["POST"])
+def add_chapter():
+    data = request.json
+    name = data.get("name")
+    course_id = data.get("course_id")
+    if not name or not course_id:
+        return jsonify({"error": "name and course_id required"}), 400
+    chapter = Chapter(name=name, course_id=course_id)
+    db.session.add(chapter)
+    db.session.commit()
+    return jsonify({"id": chapter.id, "name": chapter.name})
+
+
+@api_blueprint.route("/chapters/<int:chapter_id>", methods=["PUT", "DELETE"])
+def modify_chapter(chapter_id):
+    chapter = Chapter.query.get_or_404(chapter_id)
+    if request.method == "DELETE":
+        db.session.delete(chapter)
+        db.session.commit()
+        return jsonify({"status": "deleted"})
+    data = request.json
+    chapter.name = data.get("name", chapter.name)
+    db.session.commit()
+    return jsonify({"id": chapter.id, "name": chapter.name})
+
+
+@api_blueprint.route("/modules/by_chapter/<int:chapter_id>", methods=["GET"])
+def modules_by_chapter(chapter_id):
+    modules = Module.query.filter_by(chapter_id=chapter_id).all()
+    return jsonify(
+        [
+            {"id": m.id, "name": m.name, "description": m.description or ""}
+            for m in modules
+        ]
+    )
+
+
 @api_blueprint.route("/modules/<language>", methods=["GET"])
 def modules(language):
     modules = Module.query.filter(
@@ -58,12 +135,34 @@ def add_module():
     data = request.json
     name = data.get("name")
     language = data.get("language")
-    if not name or not language:
-        return jsonify({"error": "name and language required"}), 400
-    module = Module(name=name, language=language)
+    chapter_id = data.get("chapter_id")
+    description = data.get("description")
+    if not name or not language or not chapter_id:
+        return jsonify({"error": "name, language and chapter_id required"}), 400
+    module = Module(
+        name=name,
+        language=language,
+        chapter_id=chapter_id,
+        description=description,
+    )
     db.session.add(module)
     db.session.commit()
     return jsonify({"id": module.id, "name": module.name, "language": module.language})
+
+
+@api_blueprint.route("/modules/<int:module_id>", methods=["PUT", "DELETE"])
+def modify_module(module_id):
+    module = Module.query.get_or_404(module_id)
+    if request.method == "DELETE":
+        db.session.delete(module)
+        db.session.commit()
+        return jsonify({"status": "deleted"})
+    data = request.json
+    module.name = data.get("name", module.name)
+    module.description = data.get("description", module.description)
+    module.chapter_id = data.get("chapter_id", module.chapter_id)
+    db.session.commit()
+    return jsonify({"id": module.id, "name": module.name})
 
 
 @api_blueprint.route("/instruction", methods=["POST"])

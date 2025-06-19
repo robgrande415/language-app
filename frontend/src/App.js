@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import HomePage from "./components/HomePage";
 import LanguageSelector from "./components/LanguageSelector";
+import CourseScreen from "./components/CourseScreen";
+import ChapterScreen from "./components/ChapterScreen";
 import ModuleScreen from "./components/ModuleScreen";
 import PracticeSession from "./components/PracticeSession";
 import SessionSummary from "./components/SessionSummary";
@@ -14,6 +16,8 @@ import InstructionModule from "./components/InstructionModule";
 function App() {
   const [user, setUser] = useState(null);
   const [language, setLanguage] = useState("");
+  const [course, setCourse] = useState(null);
+  const [chapter, setChapter] = useState(null);
   const [cefr, setCefr] = useState("A1");
   const [module, setModule] = useState("");
   const [questionCount, setQuestionCount] = useState(5);
@@ -41,9 +45,37 @@ function App() {
     case "select-language":
       return (
         <LanguageSelector
-          onSelect={setLanguage}
-          next={() => setScreen("module")}
+          onSelect={(lang) => {
+            setLanguage(lang);
+            setCourse(null);
+            setChapter(null);
+          }}
+          next={() => setScreen("course")}
           goExport={() => setScreen("export")}
+          home={() => setScreen("home")}
+        />
+      );
+    case "course":
+      return (
+        <CourseScreen
+          language={language}
+          onSelect={(c) => {
+            setCourse(c);
+            setChapter(null);
+            setScreen("chapter");
+          }}
+          home={() => setScreen("home")}
+        />
+      );
+    case "chapter":
+      return (
+        <ChapterScreen
+          course={course}
+          onSelect={(ch) => {
+            setChapter(ch);
+            setScreen("module");
+          }}
+          back={() => setScreen("course")}
           home={() => setScreen("home")}
         />
       );
@@ -52,6 +84,7 @@ function App() {
         <ModuleScreen
           user={user}
           language={language}
+          chapter={chapter}
           cefr={cefr}
           setCefr={setCefr}
           setModule={setModule}
@@ -67,6 +100,7 @@ function App() {
             setErrorOptions(errs);
             setScreen("personalized-errors");
           }}
+          back={() => setScreen("chapter")}
           home={() => setScreen("home")}
         />
       );

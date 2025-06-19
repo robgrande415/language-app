@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
 
 function ModuleScreen({
   user,
   language,
+  chapter,
   cefr,
   setCefr,
   setModule,
@@ -14,40 +16,43 @@ function ModuleScreen({
   storeInstruction,
   startPersonalized,
   home,
+  back,
 }) {
   const [modules, setModules] = useState([]);
   const [search, setSearch] = useState("");
   const [scores, setScores] = useState({});
   const [withInstruction, setWithInstruction] = useState(false);
+  const [modal, setModal] = useState(null);
 
   useEffect(() => {
-    if (language) {
-      axios.get(`/modules/${language}`).then((res) => setModules(res.data));
+    if (chapter) {
+      axios.get(`/modules/by_chapter/${chapter.id}`).then((res) => setModules(res.data));
       axios
         .get(`/results/${user.id}/${language}`)
         .then((res) => setScores(res.data));
     }
-  }, [language, user]);
+  }, [language, user, chapter]);
 
   const filtered = modules.filter((m) =>
-    m.toLowerCase().includes(search.toLowerCase()),
+    m.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const addModule = () => {
     const name = window.prompt('New module name');
     if (!name) return;
-    axios.post('/modules', { name, language }).then(() => {
-      setModules([...modules, name]);
+    const description = window.prompt('Description');
+    axios.post('/modules', { name, language, chapter_id: chapter.id, description }).then((res) => {
+      setModules([...modules, { id: res.data.id, name, description }]);
     });
   };
 
   const chooseModule = (m) => {
-    setModule(m);
+    setModule(m.name);
     axios
-      .post("/sentence/preload", { language, cefr, module: m })
+      .post("/sentence/preload", { language, cefr, module: m.name })
       .then(() => {
         axios
-          .post("/instruction", { language, module: m })
+          .post("/instruction", { language, module: m.name })
           .then((res) => {
             const text = res.data.instruction || "";
             storeInstruction(text);
@@ -122,43 +127,95 @@ function ModuleScreen({
       <button onClick={addModule} style={{ marginLeft: "1rem" }}>
         Add Module
       </button>
-      <ul>
+      <div style={{ display: "flex", flexWrap: "wrap", marginTop: "1rem" }}>
         {filtered.map((m) => (
-          <li key={m} style={{ display: "flex", alignItems: "center" }}>
-            <button onClick={() => chooseModule(m)} style={{ marginRight: "0.5rem" }}>{m}</button>
-            <div style={{ display: "flex" }}>
-              {(scores[m] || []).map((s, idx) => {
-                const pct = Math.round(s * 100);
-                let bg = "red";
-                if (pct > 80) bg = "green";
-                else if (pct >= 60) bg = "orange";
-                return (
+          <div
+            key={m.id}
+            style={{
+              border: "1px solid #ccc",
+              borderRadius: 4,
+              padding: "1rem",
+              margin: "0.5rem",
+              width: 200,
+            }}
+          >
+            <h4>{m.name}</h4>
+            <p>
+              {(m.description || "").slice(0, 80)}
+              {m.description && m.description.length > 80 && (
+                <>
+                  ...{' '}
                   <span
-                    key={idx}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      backgroundColor: bg,
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginLeft: 4,
-                      fontSize: 12,
-                    }}
+                    style={{ color: "blue", cursor: "pointer" }}
+                    onClick={() => setModal(m)}
                   >
-                    {pct}
+                    see more
                   </span>
-                );
-              })}
-            </div>
-          </li>
+                </>
+              )}
+            </p>
+            <button onClick={() => chooseModule(m)} style={{ marginRight: '0.5rem' }}>Select</button>
+            <button
+              onClick={() => {
+                const name = window.prompt('New name', m.name);
+                if (name) {
+                  const description = window.prompt('Description', m.description || '');
+                  axios
+                    .put(`/modules/${m.id}`, { name, description })
+                    .then(() => {
+                      setModules(modules.map(x => x.id === m.id ? { ...x, name, description } : x));
+                    });
+                }
+              }}
+              style={{ marginRight: '0.5rem' }}
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Delete module?')) {
+                  axios.delete(`/modules/${m.id}`).then(() => {
+                    setModules(modules.filter(x => x.id !== m.id));
+                  });
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
         ))}
-      </ul>
+      </div>
+      {modal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModal(null)}
+        >
+          <div
+            style={{ background: "white", padding: "1rem", maxWidth: 400 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>{modal.name}</h3>
+            <ReactMarkdown>{modal.description}</ReactMarkdown>
+            <button onClick={() => setModal(null)}>Close</button>
+          </div>
+        </div>
+      )}
       <div style={{ marginTop: "1rem" }}>
         <button onClick={personalized} style={{ marginRight: "1rem" }}>
           Personalized Module based on Past errors
+        </button>
+        <button onClick={back} style={{ marginRight: "1rem" }}>
+          Back
         </button>
         <button onClick={home}>Home</button>
       </div>

@@ -11,10 +11,31 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class Course(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    language = db.Column(db.String(20), nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+
+    chapters = db.relationship(
+        "Chapter", backref="course", cascade="all, delete-orphan", lazy=True
+    )
+
+
+class Chapter(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+
+    modules = db.relationship(
+        "Module", backref="chapter", cascade="all, delete-orphan", lazy=True
+    )
+
 class Module(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
     language = db.Column(db.String(20), nullable=False)
+    chapter_id = db.Column(db.Integer, db.ForeignKey("chapter.id"))
 
 
 class Sentence(db.Model):
