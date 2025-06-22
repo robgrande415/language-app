@@ -15,15 +15,29 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
   const [stage, setStage] = useState('question');
   const [correct, setCorrect] = useState(null);
   const [vocab, setVocab] = useState([]);
+  const [prevLastCorrect, setPrevLastCorrect] = useState(null);
+  const [prevCorrectCount, setPrevCorrectCount] = useState(0);
+  const [initialCorrect, setInitialCorrect] = useState(null);
 
   const toggleAssessment = () => {
     if (correct === null) return;
-    if (correct) {
-      setCorrectCount(c => Math.max(0, c - 1));
-    } else {
-      setCorrectCount(c => c + 1);
-    }
-    setCorrect(!correct);
+    const newVal = !correct;
+    axios
+      .post('/vocab/session/override', {
+        word_id: wordId,
+        correct: newVal ? 1 : 0,
+        initial_correct: initialCorrect ? 1 : 0,
+        prev_last_correct: prevLastCorrect,
+        prev_correct_count: prevCorrectCount,
+      })
+      .then(() => {
+        if (correct) {
+          setCorrectCount((c) => Math.max(0, c - 1));
+        } else {
+          setCorrectCount((c) => c + 1);
+        }
+        setCorrect(newVal);
+      });
   };
 
   useEffect(() => {
@@ -52,6 +66,9 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
       setResponse(res.data.response);
       setErrors(res.data.errors || []);
       setChecked((res.data.errors || []).map(() => true));
+      setPrevLastCorrect(res.data.prev_last_correct);
+      setPrevCorrectCount(res.data.prev_correct_count);
+      setInitialCorrect(res.data.correct === 1);
       if (res.data.correct === 1) {
         setCorrectCount(c => c + 1);
       }
@@ -82,6 +99,9 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
           setChecked([]);
           setVocab([]);
           setCorrect(null);
+          setPrevLastCorrect(null);
+          setPrevCorrectCount(0);
+          setInitialCorrect(null);
           fetchSentence();
         }
       });

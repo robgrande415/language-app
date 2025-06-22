@@ -861,6 +861,9 @@ def vocab_submit():
     correct_text = judge_resp.choices[0].message.content.strip()
     correct_val = 1 if correct_text.startswith("1") else 0
 
+    prev_last_correct = vw.last_correct
+    prev_correct_count = vw.correct_count or 0
+
     vw.last_reviewed = datetime.utcnow()
     vw.review_count = (vw.review_count or 0) + 1
     if correct_val == 1:
@@ -868,4 +871,34 @@ def vocab_submit():
         vw.correct_count = (vw.correct_count or 0) + 1
     db.session.commit()
 
-    return jsonify({"response": text, "correct": correct_val, "errors": explanation_lines})
+    return jsonify({
+        "response": text,
+        "correct": correct_val,
+        "errors": explanation_lines,
+        "prev_last_correct": prev_last_correct.isoformat() if prev_last_correct else None,
+        "prev_correct_count": prev_correct_count,
+    })
+
+
+@api_blueprint.route("/vocab/session/override", methods=["POST"])
+def vocab_override():
+    data = request.json
+    word_id = data.get("word_id")
+    new_correct = int(data.get("correct", 0))
+    initial_correct = int(data.get("initial_correct", 0))
+    prev_last_correct = data.get("prev_last_correct")
+    prev_correct_count = int(data.get("prev_correct_count", 0))
+
+    vw = VocabWord.query.get(word_id)
+    if not vw:
+        return jsonify({"error": "Word not found"}), 404
+
+    if new_correct == 1 and initial_correct == 0:
+        vw.last_correct = datetime.utcnow()
+        vw.correct_count = prev_correct_count + 1
+    elif new_correct == 0 and initial_correct == 1:
+        vw.last_correct = datetime.fromisoformat(prev_last_correct) if prev_last_correct else None
+        vw.correct_count = prev_correct_count
+
+    db.session.commit()
+    return jsonify({"status": "ok"})
