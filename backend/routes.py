@@ -31,6 +31,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # cache of pre-generated sentences per (language, module, cefr)
 SENTENCE_BATCHES = {}
+# cache for vocab practice sentences per (user_id, language)
+VOCAB_BATCHES = {}
 
 
 @api_blueprint.route("/users", methods=["GET", "POST", "OPTIONS"])
@@ -685,6 +687,7 @@ def personalized_error_submit():
 def add_vocab():
     data = request.json
     user_id = data.get("user_id")
+    language = data.get("language")
     words = data.get("words", [])
     if not user_id:
         return jsonify({"error": "user_id required"}), 400
@@ -697,10 +700,10 @@ def add_vocab():
         word = w.strip()
         if not word:
             continue
-        exists = VocabWord.query.filter_by(user_id=user_id, word=word).first()
+        exists = VocabWord.query.filter_by(user_id=user_id, language=language, word=word).first()
         if exists:
             continue
-        vw = VocabWord(user_id=user_id, word=word)
+        vw = VocabWord(user_id=user_id, language=language, word=word)
         db.session.add(vw)
         added += 1
     db.session.commit()
@@ -715,6 +718,7 @@ def export_vocab(user_id):
     writer = csv.writer(string_data)
     writer.writerow([
         "word",
+        "language",
         "added_at",
         "last_reviewed",
         "last_correct",
@@ -724,6 +728,7 @@ def export_vocab(user_id):
     for w in words:
         writer.writerow([
             w.word,
+            w.language,
             w.added_at,
             w.last_reviewed or "",
             w.last_correct or "",
@@ -739,3 +744,128 @@ def export_vocab(user_id):
         as_attachment=True,
         download_name="vocab.csv",
     )
+
+
+@api_blueprint.route("/vocab/session/preload", methods=["POST"])
+def vocab_preload():
+    data = request.json
+    user_id = data.get("user_id")
+    language = data.get("language")
+    cefr = data.get("cefr")
+    count = int(data.get("count", 5))
+
+    words = (
+        VocabWord.query.filter_by(user_id=user_id, language=language)
+        .order_by(VocabWord.last_correct.asc().nullsfirst())
+        .limit(count)
+        .all()
+    )
+
+    batch = []
+    for w in words:
+        prompt = (
+            f"Generate 5 short English sentences for a student at the {cefr} level to translate into {language}. "
+            f"Each sentence should use the word '{w.word}'. Number each sentence."
+        )
+        current_app.logger.info("OpenAI prompt: %s", prompt)
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        current_app.logger.info(
+            "OpenAI response: %s", resp.choices[0].message.content.strip()
+        )
+        lines = [
+            re.sub(r"^\d+[\).]\s*", "", l).strip()
+            for l in resp.choices[0].message.content.strip().splitlines()
+            if l.strip()
+        ]
+        if not lines:
+            continue
+        sentence = random.choice(lines)
+        batch.append({"id": w.id, "word": w.word, "sentence": sentence})
+
+    VOCAB_BATCHES[(user_id, language)] = batch
+    return jsonify({"count": len(batch)})
+
+
+@api_blueprint.route("/vocab/session/generate", methods=["POST"])
+def vocab_generate():
+    data = request.json
+    user_id = data.get("user_id")
+    language = data.get("language")
+    key = (user_id, language)
+    batch = VOCAB_BATCHES.get(key)
+    if not batch:
+        return jsonify({"sentence": "", "word": "", "word_id": None})
+    item = batch.pop(0)
+    return jsonify({"sentence": item["sentence"], "word": item["word"], "word_id": item["id"]})
+
+
+@api_blueprint.route("/vocab/session/submit", methods=["POST"])
+def vocab_submit():
+    data = request.json
+    user_id = data["user_id"]
+    word_id = data["word_id"]
+    language = data["language"]
+    cefr = data["cefr"]
+    english = data["english"]
+    translation = data["translation"]
+
+    vw = VocabWord.query.get(word_id)
+    if not vw or vw.user_id != user_id:
+        return jsonify({"error": "Word not found"}), 404
+
+    prompt = f"""
+            Correct these, ignoring spelling errors.
+            Respond in the format:
+            <original {language} sentence>
+            <correct {language} sentence with only the corrections in bold>
+            <list of corrections with quick explanations, newline delimited>
+            If the response is correct, simply respond with "No corrections needed"
+            """
+
+    user_message = f"{english} - {translation}."
+    full_prompt = prompt + "\n New submission \n" + user_message
+    current_app.logger.info("OpenAI prompt: %s", full_prompt)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": full_prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", response.choices[0].message.content.strip()
+    )
+    text = response.choices[0].message.content.strip()
+
+    lines = text.splitlines()
+    explanation_start = next(
+        (i for i, line in enumerate(lines) if line.strip().lower() == "explanation:"),
+        None,
+    )
+    explanation_lines = lines[explanation_start + 1 :] if explanation_start is not None else []
+
+    judge_prompt = (
+        f"Vocabulary word: {vw.word}.\n"
+        f"English sentence: {english}\n"
+        f"Learner translation: {translation}\n"
+        f"Did the learner correctly convey the meaning and use the word {vw.word}? Respond only with 1 or 0."
+    )
+    current_app.logger.info("OpenAI prompt: %s", judge_prompt)
+    judge_resp = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": judge_prompt}],
+    )
+    current_app.logger.info(
+        "OpenAI response: %s", judge_resp.choices[0].message.content.strip()
+    )
+    correct_text = judge_resp.choices[0].message.content.strip()
+    correct_val = 1 if correct_text.startswith("1") else 0
+
+    vw.last_reviewed = datetime.utcnow()
+    vw.review_count = (vw.review_count or 0) + 1
+    if correct_val == 1:
+        vw.last_correct = datetime.utcnow()
+        vw.correct_count = (vw.correct_count or 0) + 1
+    db.session.commit()
+
+    return jsonify({"response": text, "correct": correct_val, "errors": explanation_lines})

@@ -91,6 +91,7 @@ class Instruction(db.Model):
 class VocabWord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    language = db.Column(db.String(20), nullable=False)
     word = db.Column(db.String(120), nullable=False)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_reviewed = db.Column(db.DateTime)

@@ -12,6 +12,8 @@ import PersonalizedTopics from "./components/PersonalizedTopics";
 import PersonalizedErrors from "./components/PersonalizedErrors"
 import ErrorReviewSession from "./components/ErrorReviewSession";
 import InstructionModule from "./components/InstructionModule";
+import VocabSetup from "./components/VocabSetup";
+import VocabPractice from "./components/VocabPractice";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -72,6 +74,7 @@ function App() {
             setChapter(null);
             setScreen("chapter");
           }}
+          startVocab={() => setScreen("vocab-setup")}
           home={() => setScreen("home")}
         />
       );
@@ -136,6 +139,44 @@ function App() {
           module={module}
           moduleDescription={moduleDescription}
           instruction={instruction}
+          questionCount={questionCount}
+          onComplete={(correct) => {
+            setSessionStats({ correct, total: questionCount });
+            setScreen("summary");
+          }}
+          home={() => setScreen("home")}
+        />
+      );
+    case "vocab-setup":
+      return (
+        <VocabSetup
+          cefr={cefr}
+          setCefr={setCefr}
+          questionCount={questionCount}
+          setQuestionCount={setQuestionCount}
+          start={() => {
+            axios
+              .post('/vocab/session/preload', {
+                user_id: user.id,
+                language,
+                cefr,
+                count: questionCount,
+              })
+              .then(() => {
+                setModule('vocab');
+                setScreen('vocab-practice');
+              });
+          }}
+          back={() => setScreen('course')}
+          home={() => setScreen('home')}
+        />
+      );
+    case "vocab-practice":
+      return (
+        <VocabPractice
+          user={user}
+          language={language}
+          cefr={cefr}
           questionCount={questionCount}
           onComplete={(correct) => {
             setSessionStats({ correct, total: questionCount });
