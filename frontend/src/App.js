@@ -65,6 +65,7 @@ function App() {
     case "course":
       return (
         <CourseScreen
+          user={user}
           language={language}
           onSelect={(c) => {
             setCourse(c);
@@ -77,12 +78,15 @@ function App() {
     case "chapter":
       return (
         <ChapterScreen
+          user={user}
+          language={language}
           course={course}
           onSelect={(ch) => {
             setChapter(ch);
             setScreen("module");
           }}
           back={() => setScreen("course")}
+          goCourse={() => setScreen("course")}
           home={() => setScreen("home")}
         />
       );
