@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
+import Breadcrumbs from "./Breadcrumbs";
 
 function ModuleScreen({
   user,
   language,
+  course,
   chapter,
   cefr,
   setCefr,
@@ -18,6 +20,7 @@ function ModuleScreen({
   startPersonalized,
   home,
   back,
+  goCourse,
 }) {
   const [modules, setModules] = useState([]);
   const [search, setSearch] = useState("");
@@ -25,6 +28,7 @@ function ModuleScreen({
   const [withInstruction, setWithInstruction] = useState(false);
   const [modal, setModal] = useState(null);
   const [formModal, setFormModal] = useState(null);
+  const [sortOption, setSortOption] = useState('name-asc');
 
   useEffect(() => {
     if (chapter) {
@@ -38,6 +42,32 @@ function ModuleScreen({
   const filtered = modules.filter((m) =>
     m.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const sorted = [...filtered].sort((a, b) => {
+    const entryA = scores[a.name] || {};
+    const entryB = scores[b.name] || {};
+    const scoresA = Array.isArray(entryA) ? entryA : entryA.scores || [];
+    const scoresB = Array.isArray(entryB) ? entryB : entryB.scores || [];
+    const avgA = scoresA.length > 0 ? scoresA.reduce((x, y) => x + y, 0) / scoresA.length : 0;
+    const avgB = scoresB.length > 0 ? scoresB.reduce((x, y) => x + y, 0) / scoresB.length : 0;
+    const lastA = Array.isArray(entryA) ? null : entryA.last_reviewed;
+    const lastB = Array.isArray(entryB) ? null : entryB.last_reviewed;
+
+    switch (sortOption) {
+      case 'name-desc':
+        return b.name.localeCompare(a.name);
+      case 'progress':
+        return avgA - avgB;
+      case 'last-reviewed':
+        if (!lastA && !lastB) return 0;
+        if (!lastA) return -1;
+        if (!lastB) return 1;
+        return new Date(lastA) - new Date(lastB);
+      case 'name-asc':
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
 
   const addModule = () => {
     setFormModal({ id: null, name: "", description: "" });
@@ -73,6 +103,13 @@ function ModuleScreen({
 
   return (
     <div style={{ padding: "2rem" }}>
+      <Breadcrumbs
+        items={[
+          { label: course.name, onClick: goCourse },
+          { label: chapter.name, onClick: back },
+          { label: "Select Module" },
+        ]}
+      />
       <h2>Select Module</h2>
       <div>
         {["A1", "A2", "B1", "B2", "C1", "C2"].map((lvl) => (
@@ -122,12 +159,23 @@ function ModuleScreen({
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search"
       />
+      <select
+        value={sortOption}
+        onChange={(e) => setSortOption(e.target.value)}
+        style={{ marginLeft: "1rem" }}
+      >
+        <option value="name-asc">Name (A-Z)</option>
+        <option value="name-desc">Name (Z-A)</option>
+        <option value="progress">Progress</option>
+        <option value="last-reviewed">Last Reviewed</option>
+      </select>
       <button onClick={addModule} style={{ marginLeft: "1rem" }}>
         Add Module
       </button>
-      <div style={{ display: "flex", flexWrap: "wrap", marginTop: "1rem" }}>
-        {filtered.map((m) => {
-          const moduleScores = scores[m.name] || [];
+      <div style={{ display: "flex", flexDirection: "column", marginTop: "1rem" }}>
+        {sorted.map((m) => {
+          const entry = scores[m.name] || {};
+          const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
           const avg = moduleScores.length > 0 ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length : null;
 
           return (
@@ -138,7 +186,7 @@ function ModuleScreen({
                 borderRadius: 4,
                 padding: "1rem",
                 margin: "0.5rem",
-                width: 300,
+                width: '100%',
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",

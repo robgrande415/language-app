@@ -530,13 +530,16 @@ def module_results(user_id, language):
         .order_by(ModuleResult.timestamp.desc())
         .all()
     )
-    data = defaultdict(list)
+    data = defaultdict(lambda: {"scores": [], "last_reviewed": None})
 
     for res, name in rows:
-        if len(data[name]) < 3:
-            data[name].append(res.score)
+        entry = data[name]
+        if entry["last_reviewed"] is None:
+            entry["last_reviewed"] = res.timestamp.isoformat()
+        if len(entry["scores"]) < 3:
+            entry["scores"].append(res.score)
 
-    return jsonify(dict(data))
+    return jsonify({k: v for k, v in data.items()})
 
 
 

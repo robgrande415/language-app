@@ -85,6 +85,7 @@ function App() {
         <ModuleScreen
           user={user}
           language={language}
+          course={course}
           chapter={chapter}
           cefr={cefr}
           setCefr={setCefr}
@@ -103,6 +104,7 @@ function App() {
             setScreen("personalized-errors");
           }}
           back={() => setScreen("chapter")}
+          goCourse={() => setScreen("course")}
           home={() => setScreen("home")}
         />
       );
