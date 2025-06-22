@@ -59,6 +59,20 @@ function CourseScreen({ user, language, onSelect, home }) {
     const allMods = chs.flatMap(ch => modules[ch.id] || []);
     if (allMods.length === 0) return 0;
 
+    let total = 0;
+    allMods.forEach(m => {
+      const entry = scores[m.name] || {};
+      const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
+      const avg = moduleScores.length > 0
+        ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length
+        : 0;
+      const scaled = Math.min(avg / 0.8, 1);
+      total += scaled;
+    });
+
+    return total / allMods.length;
+  };
+
   const courseLastReviewed = (c) => {
     const chs = chapters[c.id] || [];
     let last = null;
@@ -80,11 +94,12 @@ function CourseScreen({ user, language, onSelect, home }) {
     const progB = courseProgress(b);
     const lastA = courseLastReviewed(a);
     const lastB = courseLastReviewed(b);
+
     switch (sortOption) {
       case 'name-desc':
         return b.name.localeCompare(a.name);
       case 'progress':
-        return progB - progA;
+        return progA - progB;
       case 'last-reviewed':
         if (!lastA && !lastB) return 0;
         if (!lastA) return 1;
@@ -96,6 +111,9 @@ function CourseScreen({ user, language, onSelect, home }) {
     }
   });
 
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h2>Select Course</h2>
       <div style={{ marginBottom: '1rem' }}>
         <button onClick={add} style={{ marginRight: '1rem' }}>Add Course</button>
         <select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
@@ -105,30 +123,12 @@ function CourseScreen({ user, language, onSelect, home }) {
           <option value="last-reviewed">Last Reviewed</option>
         </select>
       </div>
-        {sortedCourses.map(c => {
-      const entry = scores[m.name] || {};
-      const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
-      const avg = moduleScores.length > 0
-        ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length
-        : 0;
-
-      const scaled = Math.min(avg / 0.8, 1);  // scale and cap at 1
-      total += scaled;
-    });
-
-    return total / allMods.length;
-  };
-
-
-  return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Select Course</h2>
-      <button onClick={add} style={{ marginBottom: '1rem' }}>Add Course</button>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '1rem' }}>
-        {courses.map(c => {
+        {sortedCourses.map(c => {
           const chs = chapters[c.id] || [];
-          const chNames = chs.map(ch => ch.name).slice(0,3);
+          const chNames = chs.map(ch => ch.name).slice(0, 3);
           const progress = courseProgress(c);
+
           return (
             <div
               key={c.id}

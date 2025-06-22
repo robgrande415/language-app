@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Breadcrumbs from "./Breadcrumbs";
 
-
-function ChapterScreen({ user, language, course, onSelect, back, home, goCourse}) {
+function ChapterScreen({ user, language, course, onSelect, back, home, goCourse }) {
   const [chapters, setChapters] = useState([]);
   const [modules, setModules] = useState({});
   const [scores, setScores] = useState({});
-  const [sortOption, setSortOption] = useState('name-asc');
+  const [sortOption, setSortOption] = useState("name-asc");
 
   useEffect(() => {
     axios.get(`/chapters/${course.id}`).then(res => setChapters(res.data));
@@ -53,10 +52,22 @@ function ChapterScreen({ user, language, course, onSelect, back, home, goCourse}
   const chapterProgress = (ch) => {
     const mods = modules[ch.id] || [];
     if (mods.length === 0) return 0;
-      const avg =
-        moduleScores.length > 0
-          ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length
-          : 0;
+
+    let total = 0;
+    mods.forEach((m) => {
+      const entry = scores[m.name] || {};
+      const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
+      const avg = moduleScores.length > 0
+        ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length
+        : 0;
+
+      const scaled = Math.min(avg / 0.8, 1);  // scale and cap at 1
+      total += scaled;
+    });
+
+    return total / mods.length;
+  };
+
   const chapterLastReviewed = (ch) => {
     const mods = modules[ch.id] || [];
     let last = null;
@@ -75,22 +86,32 @@ function ChapterScreen({ user, language, course, onSelect, back, home, goCourse}
     const progB = chapterProgress(b);
     const lastA = chapterLastReviewed(a);
     const lastB = chapterLastReviewed(b);
+
     switch (sortOption) {
-      case 'name-desc':
+      case "name-desc":
         return b.name.localeCompare(a.name);
-      case 'progress':
-        return progB - progA;
-      case 'last-reviewed':
+      case "progress":
+        return progA - progB;
+      case "last-reviewed":
         if (!lastA && !lastB) return 0;
         if (!lastA) return 1;
         if (!lastB) return -1;
         return new Date(lastB) - new Date(lastA);
-      case 'name-asc':
+      case "name-asc":
       default:
         return a.name.localeCompare(b.name);
     }
   });
 
+  return (
+    <div style={{ padding: '2rem' }}>
+      <Breadcrumbs
+        items={[
+          { label: "Courses", onClick: goCourse },
+          { label: course.name, onClick: back },
+        ]}
+      />
+      <h2>{course.name}</h2>
       <div style={{ marginBottom: '1rem' }}>
         <button onClick={add} style={{ marginRight: '1rem' }}>Add Chapter</button>
         <select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
@@ -100,34 +121,8 @@ function ChapterScreen({ user, language, course, onSelect, back, home, goCourse}
           <option value="last-reviewed">Last Reviewed</option>
         </select>
       </div>
-        {sortedChapters.map(ch => {
-      const entry = scores[m.name] || {};
-      const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
-      const avg = moduleScores.length > 0
-        ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length
-        : 0;
-
-      const scaled = Math.min(avg / 0.8, 1);  // scale and cap at 1
-      total += scaled;
-    });
-
-    return total / mods.length;
-  };
-
-
-  return (
-    <div style={{ padding: '2rem' }}>
-      <Breadcrumbs
-        items={[
-          { label: "Courses", onClick: back },
-          { label: course.name},
-          //{ label: "Select Module" },
-        ]}
-      />
-      <h2>{course.name}</h2>
-      <button onClick={add} style={{ marginBottom: '1rem' }}>Add Chapter</button>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '1rem' }}>
-        {chapters.map(ch => {
+        {sortedChapters.map(ch => {
           const mods = modules[ch.id] || [];
           const modNames = mods.map(m => m.name).slice(0, 3);
           const progress = chapterProgress(ch);
