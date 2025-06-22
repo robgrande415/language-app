@@ -6,6 +6,7 @@ function CourseScreen({ user, language, onSelect, home }) {
   const [chapters, setChapters] = useState({});
   const [modules, setModules] = useState({});
   const [scores, setScores] = useState({});
+  const [sortOption, setSortOption] = useState('name-asc');
 
   useEffect(() => {
     axios.get(`/courses/${language}`).then(res => setCourses(res.data));
@@ -58,8 +59,53 @@ function CourseScreen({ user, language, onSelect, home }) {
     const allMods = chs.flatMap(ch => modules[ch.id] || []);
     if (allMods.length === 0) return 0;
 
-    let total = 0;
-    allMods.forEach(m => {
+  const courseLastReviewed = (c) => {
+    const chs = chapters[c.id] || [];
+    let last = null;
+    chs.forEach((ch) => {
+      const mods = modules[ch.id] || [];
+      mods.forEach((m) => {
+        const entry = scores[m.name] || {};
+        const lr = Array.isArray(entry) ? null : entry.last_reviewed;
+        if (lr && (!last || new Date(lr) > new Date(last))) {
+          last = lr;
+        }
+      });
+    });
+    return last;
+  };
+
+  const sortedCourses = [...courses].sort((a, b) => {
+    const progA = courseProgress(a);
+    const progB = courseProgress(b);
+    const lastA = courseLastReviewed(a);
+    const lastB = courseLastReviewed(b);
+    switch (sortOption) {
+      case 'name-desc':
+        return b.name.localeCompare(a.name);
+      case 'progress':
+        return progB - progA;
+      case 'last-reviewed':
+        if (!lastA && !lastB) return 0;
+        if (!lastA) return 1;
+        if (!lastB) return -1;
+        return new Date(lastB) - new Date(lastA);
+      case 'name-asc':
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
+
+      <div style={{ marginBottom: '1rem' }}>
+        <button onClick={add} style={{ marginRight: '1rem' }}>Add Course</button>
+        <select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+          <option value="progress">Progress</option>
+          <option value="last-reviewed">Last Reviewed</option>
+        </select>
+      </div>
+        {sortedCourses.map(c => {
       const entry = scores[m.name] || {};
       const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
       const avg = moduleScores.length > 0
