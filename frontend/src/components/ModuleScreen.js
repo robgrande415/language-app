@@ -50,7 +50,7 @@ function ModuleScreen({
       .post("/sentence/preload", { language, cefr, module: m.name, module_description: m.description })
       .then(() => {
         axios
-          .post("/instruction", { language, module: m.name })
+          .post("/instruction", { language, module: m.name, module_description: m.description})
           .then((res) => {
             const text = res.data.instruction || "";
             storeInstruction(text);
@@ -180,7 +180,7 @@ function ModuleScreen({
                 {avg !== null && (
                   <>
                     <div className="progress-info" style={{ marginBottom: "0.25rem" }}>
-                      Progress: {avg.toFixed(0)}%
+                      Progress: {(avg*100).toFixed(0)}%
                     </div>
                     <div
                       className="progress-bar"
@@ -189,7 +189,7 @@ function ModuleScreen({
                       <div
                         className="progress-fill"
                         style={{
-                          width: `${avg}%`,
+                          width: `${avg*100}%`,
                           background: "#ff9500",
                           height: "100%",
                         }}

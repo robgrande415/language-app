@@ -169,6 +169,7 @@ def modify_module(module_id):
 def instruction():
     data = request.json
     module_name = data.get("module")
+    module_description = data.get("module_description")
     language = data.get("language")
     force = data.get("force", False)
     if not module_name:
