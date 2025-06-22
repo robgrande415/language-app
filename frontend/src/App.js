@@ -32,8 +32,14 @@ function App() {
 
   const regenerateInstruction = () =>
     axios
-      .post("/instruction", { language, module, force: true })
+      .post("/instruction", {
+        language,
+        module,
+        module_description: moduleDescription,  // ✅ explicitly pass value
+        force: true,
+      })
       .then((res) => setInstruction(res.data.instruction || ""));
+
 
   const login = (selectedUser) => {
     setUser(selectedUser);
