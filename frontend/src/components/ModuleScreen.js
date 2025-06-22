@@ -105,9 +105,9 @@ function ModuleScreen({
     <div style={{ padding: "2rem" }}>
       <Breadcrumbs
         items={[
-          { label: course.name, onClick: goCourse },
-          { label: chapter.name, onClick: back },
-          { label: "Select Module" },
+          { label: course.name, onClick: back },
+          { label: chapter.name},
+          //{ label: "Select Module" },
         ]}
       />
       <h2>Select Module</h2>
@@ -186,7 +186,9 @@ function ModuleScreen({
                 borderRadius: 4,
                 padding: "1rem",
                 margin: "0.5rem",
-                width: '100%',
+                marginRight: "5rem", // ✅ this is new
+                width: 'calc(100% - 1rem)', // optional: avoids horizontal scroll
+                //width: '100%',
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
