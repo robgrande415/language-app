@@ -57,15 +57,22 @@ function CourseScreen({ user, language, onSelect, home }) {
     const chs = chapters[c.id] || [];
     const allMods = chs.flatMap(ch => modules[ch.id] || []);
     if (allMods.length === 0) return 0;
-    let good = 0;
+
+    let total = 0;
     allMods.forEach(m => {
       const entry = scores[m.name] || {};
       const moduleScores = Array.isArray(entry) ? entry : entry.scores || [];
-      const avg = moduleScores.length > 0 ? moduleScores.reduce((a,b) => a + b, 0) / moduleScores.length : 0;
-      if (avg >= 0.8) good += 1;
+      const avg = moduleScores.length > 0
+        ? moduleScores.reduce((a, b) => a + b, 0) / moduleScores.length
+        : 0;
+
+      const scaled = Math.min(avg / 0.8, 1);  // scale and cap at 1
+      total += scaled;
     });
-    return good / allMods.length;
+
+    return total / allMods.length;
   };
+
 
   return (
     <div style={{ padding: '2rem' }}>
