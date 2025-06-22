@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+import ResultView from './ResultView';
 
 function PracticeSession({ user, language, cefr, module, moduleDescription, instruction, questionCount, onComplete, home }) {
   const [sentence, setSentence] = useState('');
@@ -175,79 +176,17 @@ const submit = () => {
         </>
       )}
       {stage === 'result' && (
-        <>
-          <h3>
-            {correct ? 'Correct! 🎉' : 'Incorrect'}
-            {correct !== null && (
-              <button
-                onClick={toggleAssessment}
-                style={{ marginLeft: '1rem', fontSize: '0.8rem' }}
-              >
-                Change assessment
-              </button>
-            )}
-          </h3>
-          <div style={{ whiteSpace: 'pre-wrap' }}>
-            {response.split(/(\s+|[.,!?;:"“”«»()])/).map((tok, idx) => {
-              const visibleWord = tok;
-
-              // Match words including accents and hyphens (but not trailing punctuation or asterisks)
-              const cleaned = tok
-                .replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ'-]+/, '')  // remove leading non-letter
-                .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'-]+$/, ''); // remove trailing non-letter
-
-              if (!cleaned) return tok;
-
-              const selected = vocab.includes(cleaned);
-              return (
-                <span
-                  key={idx}
-                  onClick={() => toggleWord(cleaned)}
-                  style={{
-                    backgroundColor: selected ? 'lightblue' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {visibleWord}
-                </span>
-              );
-            })}
-          </div>
-          {errors.length > 0 && (
-            <div>
-              <h4>Select errors to save:</h4>
-              <ul>
-                {errors.map((err, idx) => (
-                  <li key={idx}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={checked[idx]}
-                        onChange={() => {
-                          const list = [...checked];
-                          list[idx] = !list[idx];
-                          setChecked(list);
-                        }}
-                      />{' '}
-                      {err}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {vocab.length > 0 && (
-            <div>
-              <h4>Vocab List (click word to add)</h4>
-              <ul>
-                {vocab.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <button onClick={nextStep}>Next</button>
-        </>
+        <ResultView
+          response={response}
+          errors={errors}
+          checked={checked}
+          setChecked={setChecked}
+          vocab={vocab}
+          toggleWord={toggleWord}
+          nextStep={nextStep}
+          correct={correct}
+          toggleAssessment={toggleAssessment}
+        />
       )}
       <div>Progress: {count}/{questionCount}</div>
       <div style={{ marginTop: '1rem' }}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import ResultView from './ResultView';
 
 function VocabPractice({ user, language, cefr, questionCount, onComplete, home }) {
   const [sentence, setSentence] = useState('');
@@ -14,6 +15,16 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
   const [stage, setStage] = useState('question');
   const [correct, setCorrect] = useState(null);
   const [vocab, setVocab] = useState([]);
+
+  const toggleAssessment = () => {
+    if (correct === null) return;
+    if (correct) {
+      setCorrectCount(c => Math.max(0, c - 1));
+    } else {
+      setCorrectCount(c => c + 1);
+    }
+    setCorrect(!correct);
+  };
 
   useEffect(() => {
     fetchSentence();
@@ -106,67 +117,17 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
         </>
       )}
       {stage === 'result' && (
-        <>
-          <h3>
-            {correct ? 'Correct! 🎉' : 'Incorrect'}
-          </h3>
-          <div style={{ whiteSpace: 'pre-wrap' }}>
-            {response.split(/(\s+|[.,!?;:"“”«»()])/).map((tok, idx) => {
-              const visibleWord = tok;
-              const cleaned = tok
-                .replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ'-]+/, '')
-                .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'-]+$/, '');
-              if (!cleaned) return tok;
-              const selected = vocab.includes(cleaned);
-              return (
-                <span
-                  key={idx}
-                  onClick={() => toggleWord(cleaned)}
-                  style={{
-                    backgroundColor: selected ? 'lightblue' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {visibleWord}
-                </span>
-              );
-            })}
-          </div>
-          {errors.length > 0 && (
-            <div>
-              <h4>Select errors to save:</h4>
-              <ul>
-                {errors.map((err, idx) => (
-                  <li key={idx}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={checked[idx]}
-                        onChange={() => {
-                          const list = [...checked];
-                          list[idx] = !list[idx];
-                          setChecked(list);
-                        }}
-                      />{' '}
-                      {err}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {vocab.length > 0 && (
-            <div>
-              <h4>Vocab List (click word to add)</h4>
-              <ul>
-                {vocab.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <button onClick={nextStep}>Next</button>
-        </>
+        <ResultView
+          response={response}
+          errors={errors}
+          checked={checked}
+          setChecked={setChecked}
+          vocab={vocab}
+          toggleWord={toggleWord}
+          nextStep={nextStep}
+          correct={correct}
+          toggleAssessment={toggleAssessment}
+        />
       )}
       <div>Progress: {count}/{questionCount}</div>
       <div style={{ marginTop: '1rem' }}>
