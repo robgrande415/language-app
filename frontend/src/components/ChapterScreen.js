@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Breadcrumbs from "./Breadcrumbs";
 
-function ChapterScreen({ course, onSelect, back, home }) {
+
+function ChapterScreen({ course, onSelect, back, home, goCourse}) {
   const [chapters, setChapters] = useState([]);
 
   useEffect(() => {
@@ -33,6 +35,13 @@ function ChapterScreen({ course, onSelect, back, home }) {
 
   return (
     <div style={{ padding: '2rem' }}>
+      <Breadcrumbs
+        items={[
+          { label: "Courses", onClick: back },
+          { label: course.name},
+          //{ label: "Select Module" },
+        ]}
+      />
       <h2>{course.name}</h2>
       <button onClick={add} style={{ marginBottom: '1rem' }}>Add Chapter</button>
       <ul>

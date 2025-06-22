@@ -105,9 +105,9 @@ function ModuleScreen({
     <div style={{ padding: "2rem" }}>
       <Breadcrumbs
         items={[
+          { label: "Courses", onClick: goCourse },
           { label: course.name, onClick: back },
-          { label: chapter.name},
-          //{ label: "Select Module" },
+          { label: chapter.name },
         ]}
       />
       <h2>Select Module</h2>
