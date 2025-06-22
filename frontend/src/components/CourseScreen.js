@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function CourseScreen({ user, language, onSelect, home }) {
+function CourseScreen({ user, language, onSelect, startVocab, home }) {
   const [courses, setCourses] = useState([]);
   const [chapters, setChapters] = useState({});
   const [modules, setModules] = useState({});
@@ -184,6 +184,7 @@ function CourseScreen({ user, language, onSelect, home }) {
         })}
       </div>
       <div style={{ marginTop: '1rem' }}>
+        <button onClick={startVocab} style={{ marginRight: '1rem' }}>Vocab Study</button>
         <button onClick={home}>Home</button>
       </div>
     </div>
