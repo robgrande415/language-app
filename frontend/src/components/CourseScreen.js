@@ -185,6 +185,7 @@ function CourseScreen({ user, language, onSelect, startVocab, home }) {
       </div>
       <div style={{ marginTop: '1rem' }}>
         <button onClick={startVocab} style={{ marginRight: '1rem' }}>Vocab Study</button>
+        <button onClick={() => window.setVocabTable && window.setVocabTable(true)} style={{ marginRight: '1rem' }}>Vocab Table</button>
         <button onClick={home}>Home</button>
       </div>
     </div>

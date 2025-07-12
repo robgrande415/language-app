@@ -710,6 +710,47 @@ def add_vocab():
     return jsonify({"status": "ok", "count": added})
 
 
+@api_blueprint.route("/vocab/<int:user_id>/<language>", methods=["GET"])
+def list_vocab(user_id, language):
+    """List all vocab words for a user and language."""
+    words = VocabWord.query.filter_by(user_id=user_id, language=language).order_by(VocabWord.added_at.desc()).all()
+    return jsonify([
+        {
+            "id": w.id,
+            "word": w.word,
+            "language": w.language,
+            "added_at": w.added_at.isoformat() if w.added_at else None,
+            "last_reviewed": w.last_reviewed.isoformat() if w.last_reviewed else None,
+            "last_correct": w.last_correct.isoformat() if w.last_correct else None,
+            "review_count": w.review_count,
+            "correct_count": w.correct_count,
+        }
+        for w in words
+    ])
+
+
+@api_blueprint.route("/vocab/<int:word_id>", methods=["PUT"])
+def update_vocab(word_id):
+    """Update a vocab word (word text only)."""
+    vw = VocabWord.query.get_or_404(word_id)
+    data = request.json
+    new_word = data.get("word")
+    if not new_word:
+        return jsonify({"error": "word is required"}), 400
+    vw.word = new_word
+    db.session.commit()
+    return jsonify({"id": vw.id, "word": vw.word})
+
+
+@api_blueprint.route("/vocab/<int:word_id>", methods=["DELETE"])
+def delete_vocab(word_id):
+    """Delete a vocab word by ID."""
+    vw = VocabWord.query.get_or_404(word_id)
+    db.session.delete(vw)
+    db.session.commit()
+    return jsonify({"status": "deleted"})
+
+
 @api_blueprint.route("/vocab/<int:user_id>/export", methods=["GET"])
 def export_vocab(user_id):
     words = VocabWord.query.filter_by(user_id=user_id).order_by(VocabWord.added_at).all()

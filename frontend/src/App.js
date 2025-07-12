@@ -14,6 +14,7 @@ import ErrorReviewSession from "./components/ErrorReviewSession";
 import InstructionModule from "./components/InstructionModule";
 import VocabSetup from "./components/VocabSetup";
 import VocabPractice from "./components/VocabPractice";
+import VocabTable from "./components/VocabTable";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -31,6 +32,10 @@ function App() {
   const [selectedErrors, setSelectedErrors] = useState([]);
   const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
   const [instruction, setInstruction] = useState("");
+  const [showVocabTable, setShowVocabTable] = useState(false);
+  // Make available globally for CourseScreen button
+  window.setVocabTable = setShowVocabTable;
+
 
   const regenerateInstruction = () =>
     axios
@@ -65,6 +70,15 @@ function App() {
         />
       );
     case "course":
+      if (showVocabTable) {
+        return (
+          <VocabTable
+            user={user}
+            language={language}
+            onBack={() => setShowVocabTable(false)}
+          />
+        );
+      }
       return (
         <CourseScreen
           user={user}
