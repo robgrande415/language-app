@@ -778,7 +778,7 @@ def vocab_preload():
         lines = [
             re.sub(r"^\d+[\).]\s*", "", l).strip()
             for l in resp.choices[0].message.content.strip().splitlines()
-            if l.strip()
+            if l.strip() and re.match(r"^\d+[\).]\s*", l)
         ]
         if not lines:
             continue
