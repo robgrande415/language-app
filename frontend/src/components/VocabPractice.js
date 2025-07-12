@@ -3,6 +3,7 @@ import axios from 'axios';
 import ResultView from './ResultView';
 
 function VocabPractice({ user, language, cefr, questionCount, onComplete, home }) {
+  const [showWord, setShowWord] = useState(false);
   const [sentence, setSentence] = useState('');
   const [word, setWord] = useState('');
   const [wordId, setWordId] = useState(null);
@@ -51,6 +52,7 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
         setWord(res.data.word);
         setWordId(res.data.word_id);
         setStage('question');
+      setShowWord(false);
       });
   };
 
@@ -111,7 +113,19 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
     <div style={{ padding: '2rem' }}>
       {stage === 'question' && (
         <>
-          <h3>Translate the following sentence using '{word}':</h3>
+          <h3>
+            Translate the following sentence using the word: 
+            <span style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center' }} onClick={() => setShowWord(v => !v)}>
+              {showWord ? "'" + word + "'" : '*'.repeat(word.length || 7)}
+              <span style={{ marginLeft: 8, fontSize: '1.2em', color: '#888' }} title={showWord ? 'Hide word' : 'Show word'}>
+                {showWord ? (
+                  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l22 22"/><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19C7 19 2.73 15.11 1 12c.74-1.32 1.81-2.87 3.08-4.13M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-5.12"/><path d="M9.88 9.88a3 3 0 0 1 4.24 4.24"/><path d="M21 21L3 3"/></svg>
+                ) : (
+                  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
+              </span>
+            </span>
+          </h3>
           <p>{sentence}</p>
           <textarea
             spellCheck={true}

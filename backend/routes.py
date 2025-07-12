@@ -806,7 +806,7 @@ def vocab_preload():
     for w in words:
         prompt = (
             f"Generate 5 short English sentences for a student at the {cefr} level to translate into {language}. "
-            f"Each sentence should use the word '{w.word}'. Number each sentence."
+            f"The translation of each sentence should use the word '{w.word}'. Number each sentence."
         )
         current_app.logger.info("OpenAI prompt: %s", prompt)
         resp = client.chat.completions.create(
