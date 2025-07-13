@@ -208,9 +208,10 @@ def instruction():
 
 def generate_batch_prompt(cefr, target_language, module, module_description=""):
     return (
-        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. \n"
-        f"The sentences should cover the topic of: {module}. More details about the module: {module_description}.\n"
-        f"Number each sentence."
+        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. "
+        f"The sentences should cover the topic of: {module}. More details: {module_description}. "
+        f"Use a variety of sentence structures (e.g., questions, negatives, imperatives) and different contexts (e.g., home, travel, work, daily routine). "
+        f"Each sentence should use different vocabulary and not repeat phrasing or structure. Number each sentence."
     )
 
 
@@ -806,7 +807,8 @@ def vocab_preload():
     for w in words:
         prompt = (
             f"Generate 5 short English sentences for a student at the {cefr} level to translate into {language}. "
-            f"The translation of each sentence should use the word '{w.word}'. Number each sentence."
+            f"The translation of each sentence must include the word '{w.word}' in a different syntactic structure (e.g., declarative, interrogative, imperative, conditional) and in a different real-life context. "
+            f"Number each sentence."
         )
         current_app.logger.info("OpenAI prompt: %s", prompt)
         resp = client.chat.completions.create(

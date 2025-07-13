@@ -89,6 +89,14 @@ function App() {
             setScreen("chapter");
           }}
           startVocab={() => setScreen("vocab-setup")}
+          startPersonalized={() => {
+            axios
+              .post('/personalized/errors', { user_id: user.id, language })
+              .then(res => {
+                setErrorOptions(res.data.errors || []);
+                setScreen('personalized-errors');
+              });
+          }}
           home={() => setScreen("home")}
         />
       );

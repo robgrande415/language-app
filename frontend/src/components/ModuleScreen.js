@@ -438,9 +438,7 @@ function ModuleScreen({
         </div>
       )}
       <div style={{ marginTop: "1rem" }}>
-        <button onClick={personalized} style={{ marginRight: "1rem" }}>
-          Personalized Module based on Past errors
-        </button>
+  
         <button onClick={back} style={{ marginRight: "1rem" }}>
           Back
         </button>

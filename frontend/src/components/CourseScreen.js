@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function CourseScreen({ user, language, onSelect, startVocab, home }) {
+function CourseScreen({ user, language, onSelect, startVocab, startPersonalized, home }) {
   const [courses, setCourses] = useState([]);
   const [chapters, setChapters] = useState({});
   const [modules, setModules] = useState({});
@@ -185,6 +185,7 @@ function CourseScreen({ user, language, onSelect, startVocab, home }) {
       </div>
       <div style={{ marginTop: '1rem' }}>
         <button onClick={startVocab} style={{ marginRight: '1rem' }}>Vocab Study</button>
+        <button onClick={startPersonalized} style={{ marginRight: '1rem' }}>Personalized Module based on Past errors</button>
         <button onClick={() => window.setVocabTable && window.setVocabTable(true)} style={{ marginRight: '1rem' }}>Vocab Table</button>
         <button onClick={home}>Home</button>
       </div>
