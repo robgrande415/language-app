@@ -230,7 +230,7 @@ function ModuleScreen({
                 {avg !== null && (
                   <>
                     <div className="progress-info" style={{ marginBottom: "0.25rem" }}>
-                      Progress: {(avg*100).toFixed(0)}%
+                      Progress: {(Math.min(avg / 0.8, 1)*100).toFixed(0)}%
                     </div>
                     <div
                       className="progress-bar"
@@ -239,7 +239,7 @@ function ModuleScreen({
                       <div
                         className="progress-fill"
                         style={{
-                          width: `${avg*100}%`,
+                          width: `${Math.min(avg / 0.8, 1)*100}%`,
                           background: "#ff9500",
                           height: "100%",
                         }}

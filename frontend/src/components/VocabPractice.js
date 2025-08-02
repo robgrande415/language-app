@@ -1,8 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ResultView from './ResultView';
+import { SpeakerFree, SpeakerPaid, MicFree, MicPaid } from './TTS_STT_Icons';
+import { useTTS_STT } from './useTTS_STT';
 
 function VocabPractice({ user, language, cefr, questionCount, onComplete, home }) {
+  // Use shared TTS/STT logic
+  const {
+    playTTS,
+    playOpenAITTS,
+    ttsLoading,
+    sttToText,
+    isListening,
+    openaiSTT,
+    sttLoading,
+    startRecording,
+    stopRecording,
+    recording
+  } = useTTS_STT({
+    ttsLang: language,
+    sttLang: language,
+    ttsApi: '/api/tts/openai',
+    sttApi: '/api/stt/openai',
+  });
+
+  // OpenAI STT: handle record/send
+  const handleOpenAIMic = () => {
+    if (!recording) {
+      startRecording((audioBlob) => {
+        openaiSTT(audioBlob, (text) => setAnswer(text));
+      });
+    } else {
+      stopRecording();
+    }
+  };
+
   const [showWord, setShowWord] = useState(false);
   const [sentence, setSentence] = useState('');
   const [word, setWord] = useState('');
@@ -67,7 +99,7 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
     }).then(res => {
       setResponse(res.data.response);
       setErrors(res.data.errors || []);
-      setChecked((res.data.errors || []).map(() => true));
+      setChecked((res.data.errors || []).map(() => false));
       setPrevLastCorrect(res.data.prev_last_correct);
       setPrevCorrectCount(res.data.prev_correct_count);
       setInitialCorrect(res.data.correct === 1);
@@ -113,9 +145,9 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
     <div style={{ padding: '2rem' }}>
       {stage === 'question' && (
         <>
-          <h3>
+           <h3 style={{ display: 'flex', alignItems: 'center' }}>
             Translate the following sentence using the word: 
-            <span style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center' }} onClick={() => setShowWord(v => !v)}>
+            <span style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', marginRight: 16 }} onClick={() => setShowWord(v => !v)}>
               {showWord ? "'" + word + "'" : '*'.repeat(word.length || 7)}
               <span style={{ marginLeft: 8, fontSize: '1.2em', color: '#888' }} title={showWord ? 'Hide word' : 'Show word'}>
                 {showWord ? (
@@ -125,28 +157,40 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
                 )}
               </span>
             </span>
+            {/* TTS Buttons */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => playTTS(sentence)} disabled={ttsLoading}> <SpeakerFree /> </button>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => playOpenAITTS(sentence)} disabled={ttsLoading}> <SpeakerPaid /> </button>
+            </span>
           </h3>
           <p>{sentence}</p>
-          <textarea
-            spellCheck={true}
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            rows={4}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              fontSize: '1rem',
-              borderRadius: '6px',
-              border: '1px solid #ccc',
-              marginBottom: '1rem',
-              resize: 'vertical',
-              fontFamily: 'inherit',
-              lineHeight: '1.4',
-              WebkitUserModify: 'read-write',
-              userSelect: 'text',
-            }}
-            placeholder="Type your answer here..."
-          />
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            <textarea
+              spellCheck={true}
+              value={answer}
+              onChange={e => setAnswer(e.target.value)}
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                fontSize: '1rem',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                marginBottom: '1rem',
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                lineHeight: '1.4',
+                WebkitUserModify: 'read-write',
+                userSelect: 'text',
+              }}
+              placeholder="Type your answer here..."
+            />
+            {/* STT Buttons */}
+            <span style={{ display: 'inline-flex', flexDirection: 'column', marginLeft: 8, gap: 2 }}>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => sttToText((text) => setAnswer(text))} disabled={isListening}> <MicFree /> </button>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={handleOpenAIMic} disabled={sttLoading || recording}> <MicPaid /> </button>
+            </span>
+          </div>
           <button onClick={submit}>Submit</button>
         </>
       )}
