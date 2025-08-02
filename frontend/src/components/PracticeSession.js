@@ -2,8 +2,40 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import ResultView from './ResultView';
+import { SpeakerFree, SpeakerPaid, MicFree, MicPaid } from './TTS_STT_Icons';
+import { useTTS_STT } from './useTTS_STT';
 
 function PracticeSession({ user, language, cefr, module, moduleDescription, instruction, questionCount, onComplete, home }) {
+  // Use shared TTS/STT logic
+  const {
+    playTTS,
+    playOpenAITTS,
+    ttsLoading,
+    sttToText,
+    isListening,
+    openaiSTT,
+    sttLoading,
+    startRecording,
+    stopRecording,
+    recording
+  } = useTTS_STT({
+    ttsLang: language,
+    sttLang: language,
+    ttsApi: '/api/tts/openai',
+    sttApi: '/api/stt/openai',
+  });
+
+  // OpenAI STT: handle record/send
+  const handleOpenAIMic = () => {
+    if (!recording) {
+      startRecording((audioBlob) => {
+        openaiSTT(audioBlob, (text) => setAnswer(text));
+      });
+    } else {
+      stopRecording();
+    }
+  };
+
   const [sentence, setSentence] = useState('');
   const [answer, setAnswer] = useState('');
   const [response, setResponse] = useState('');
@@ -150,28 +182,44 @@ const submit = () => {
       )}
       {stage === 'question' && (
         <>
-          <h3>Translate:</h3>
-          <p>{sentence}</p>
-          <textarea
-            spellCheck={true}
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            rows={4}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              fontSize: '1rem',
-              borderRadius: '6px',
-              border: '1px solid #ccc',
-              marginBottom: '1rem',
-              resize: 'vertical',
-              fontFamily: 'inherit',
-              lineHeight: '1.4',
-              WebkitUserModify: 'read-write',
-              userSelect: 'text',
-            }}
-            placeholder="Type your answer here..."
-          />
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            <h3 style={{ margin: 0, marginRight: 12, display: 'flex', alignItems: 'center' }}>
+              Translate:
+              {/* TTS Buttons */}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => playTTS(sentence)} disabled={ttsLoading}> <SpeakerFree /> </button>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => playOpenAITTS(sentence)} disabled={ttsLoading}> <SpeakerPaid /> </button>
+              </span>
+            </h3>
+            <span style={{ fontWeight: 400, marginLeft: 8 }}>{sentence}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            <textarea
+              spellCheck={true}
+              value={answer}
+              onChange={e => setAnswer(e.target.value)}
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                fontSize: '1rem',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                marginBottom: '1rem',
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                lineHeight: '1.4',
+                WebkitUserModify: 'read-write',
+                userSelect: 'text',
+              }}
+              placeholder="Type your answer here..."
+            />
+            {/* STT Buttons */}
+            <span style={{ display: 'inline-flex', flexDirection: 'column', marginLeft: 8, gap: 2 }}>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => sttToText((text) => setAnswer(text))} disabled={isListening}> <MicFree /> </button>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={handleOpenAIMic} disabled={sttLoading || recording}> <MicPaid /> </button>
+            </span>
+          </div>
           <button onClick={submit}>Submit</button>
         </>
       )}
