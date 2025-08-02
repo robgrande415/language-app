@@ -207,8 +207,60 @@ def instruction():
 
 
 def generate_batch_prompt(cefr, target_language, module, module_description=""):
+    cefr_mapped = {
+        "A1": "Beginner",
+        "A2": "High Beginner",
+        "B1": "Intermediate",
+        "B2": "Upper-Intermediate",
+        "C1": "Low-Advanced",
+        "C2": "Advanced",
+    }
+
+    CEFR_VERBOSE = {
+        "A1": (
+            "The user is a **Beginner (A1)**. They can understand and produce short, simple expressions related to immediate needs. "
+            "Use **very simple sentence structures**, **everyday vocabulary**, and clear, direct phrasing. "
+            "Avoid complex words, idioms, or long sentences.\n"
+            "**Example**: 'I will eat dinner at six.'"
+        ),
+        "A2": (
+            "The user is a **High Beginner (A2)**. They can communicate in simple tasks and describe aspects of their life in a basic way. "
+            "Use **short, clear sentences** with **slightly more varied vocabulary** than at A1. Keep the language practical and familiar. "
+            "Avoid abstract or nuanced phrasing.\n"
+            "**Example**: 'She won’t go to work tomorrow.'"
+        ),
+        "B1": (
+            "The user is **Intermediate (B1)**. They can handle most situations while traveling and describe experiences, events, and plans. "
+            "Use **longer sentences**, **clear sequencing of ideas**, and a **wider range of vocabulary**. "
+            "Avoid slang, idiomatic expressions, or overly simple phrasing.\n"
+            "**Example**: 'Will you help me carry these boxes when you arrive?'"
+        ),
+        "B2": (
+            "The user is **Upper-Intermediate (B2)**. They can understand and produce detailed text on a variety of subjects. "
+            "Use **natural, flowing language**, **moderate sentence complexity**, and **more precise vocabulary**. "
+            "You may include some nuance or indirectness in phrasing.\n"
+            "**Example**: 'If she finishes early, she will join us for dinner.'"
+        ),
+        "C1": (
+            "The user is **Low-Advanced (C1)**. They can express themselves fluently and flexibly in social, academic, or professional contexts. "
+            "Use **varied sentence structures**, **less common vocabulary**, and **subtle phrasing**. Avoid repetition or overly basic expressions. "
+            "Include realistic, context-rich sentences.\n"
+            "**Example**: 'He’ll likely have forgotten by the time she arrives.'"
+        ),
+        "C2": (
+            "The user is **Advanced (C2)**. They can understand virtually everything heard or read and express themselves very fluently and naturally. "
+            "Use **sophisticated and idiomatic language**, **complex ideas**, and **authentic phrasing** that feels natural to native speakers. "
+            "Avoid any textbook-style or generic phrasing.\n"
+            "**Example**: 'Will she have the nerve to speak up during the board meeting?'"
+        ),
+    }
+    cefr_label = cefr_mapped.get(cefr, cefr)
+    cefr_description = CEFR_VERBOSE.get(cefr, "")
+
+
     return (
-        f"Generate 20 short English sentences for a student at the {cefr} level to translate into {target_language}. "
+        f"Generate 20 short English sentences for a student at the {cefr_label} level to translate into {target_language}. "
+        f"{cefr_description} "
         f"The sentences should cover the topic of: {module}. More details: {module_description}. "
         f"Use a variety of sentence structures (e.g., questions, negatives, imperatives) and different contexts (e.g., home, travel, work, daily routine). "
         f"Each sentence should use different vocabulary and not repeat phrasing or structure. Number each sentence."
@@ -218,10 +270,23 @@ def generate_batch_prompt(cefr, target_language, module, module_description=""):
 def generate_sentence_batch(cefr, target_language, module, module_description=""):
     prompt = generate_batch_prompt(cefr, target_language, module, module_description)
     current_app.logger.info("OpenAI prompt: %s", prompt)
+
     response = client.chat.completions.create(
         model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,  # ← added temperature for more creative variation
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert Spanish teacher who creates level-appropriate translation exercises. "
+                    "Follow the level carefully. Use more complexity, variation, and advanced vocabulary for high levels. "
+                    "Avoid beginner phrasing when the level is advanced. Make sure sentences are diverse in structure and vocabulary."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
+
     current_app.logger.info(
         "OpenAI response: %s", response.choices[0].message.content.strip()
     )
@@ -229,9 +294,10 @@ def generate_sentence_batch(cefr, target_language, module, module_description=""
     lines = [
         re.sub(r"^\d+[\).]\s*", "", l).strip() for l in text.splitlines() if l.strip()
     ]
-    unique_lines = list(dict.fromkeys(lines[1:-1])) # remove chatgpt filler
+    unique_lines = list(dict.fromkeys(lines[1:-1]))  # remove ChatGPT filler
     random.shuffle(unique_lines)
     return unique_lines[:5]
+
 
 
 @api_blueprint.route("/sentence/preload", methods=["POST"])
@@ -334,7 +400,7 @@ def submit_sentence():
     # parse errors but do not save yet
     lines = text.splitlines()
     explanation_start = next(
-        (i for i, line in enumerate(lines) if line.strip().lower() == "explanation:"),
+        (i for i, line in enumerate(lines) if line.strip().lower().startswith("explanation")),
         None,
     )
     explanation_lines = lines[explanation_start + 1 :] if explanation_start is not None else []
@@ -344,8 +410,8 @@ def submit_sentence():
         f"Module topic: {module_name}.\n"
         f"English sentence: {english}\n"
         f"Learner translation: {translation}\n"
-        "Ignoring all mistakes outside of {module_name} (ex. ignoring spelling, prepositions, number agreement, and articles outside of the core module), did the learner correctly "
-        "convey the meaning and use the module concept {module_name}? If the user gets a spelling mistake within the {module_name}, respond with 0. Respond only with 1 (for yes) or 0 (for no)."
+        f"Ignoring all mistakes outside of {module_name} (ex. ignoring spelling, prepositions, number agreement, and articles outside of the core module), did the learner correctly "
+        f"convey the meaning and use the module concept {module_name}? If the user gets a spelling mistake within the {module_name}, respond with 0. Respond only with 1 (for yes) or 0 (for no)."
     )
     current_app.logger.info("OpenAI prompt: %s", judge_prompt)
     judge_resp = client.chat.completions.create(
