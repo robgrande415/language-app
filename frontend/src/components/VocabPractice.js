@@ -99,7 +99,7 @@ function VocabPractice({ user, language, cefr, questionCount, onComplete, home }
     }).then(res => {
       setResponse(res.data.response);
       setErrors(res.data.errors || []);
-      setChecked((res.data.errors || []).map(() => true));
+      setChecked((res.data.errors || []).map(() => false));
       setPrevLastCorrect(res.data.prev_last_correct);
       setPrevCorrectCount(res.data.prev_correct_count);
       setInitialCorrect(res.data.correct === 1);

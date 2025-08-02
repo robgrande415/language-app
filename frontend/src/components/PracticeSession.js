@@ -83,7 +83,7 @@ const submit = () => {
       setResponse(res.data.response);
 
       setErrors(res.data.errors || []);
-      setChecked((res.data.errors || []).map(() => true));
+      setChecked((res.data.errors || []).map(() => false));
       setSentenceId(res.data.sentence_id);
 
       if (res.data.correct === 1) {
