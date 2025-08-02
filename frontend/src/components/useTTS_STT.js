@@ -17,6 +17,7 @@ export function useTTS_STT({
   ttsApi = '/api/tts/openai',
   sttApi = '/api/stt/openai',
   audioOutput = false,
+  silenceDelayMs = 2000,
 }) {
   // TTS (browser)
   const playTTS = (text) => {
@@ -51,6 +52,8 @@ export function useTTS_STT({
   // STT (browser)
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const transcriptRef = useRef('');
   const sttToText = (onResult) => {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       alert('Speech Recognition not supported in this browser.');
@@ -62,17 +65,42 @@ export function useTTS_STT({
       recognitionRef.current.lang = normalizeLang(sttLang);
       recognitionRef.current.interimResults = false;
       recognitionRef.current.maxAlternatives = 1;
+      recognitionRef.current.continuous = true;
       recognitionRef.current.onresult = (event) => {
-        if (event.results && event.results[0] && event.results[0][0]) {
-          onResult(event.results[0][0].transcript);
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
-        setIsListening(false);
+        transcriptRef.current += transcript;
       };
       recognitionRef.current.onerror = () => setIsListening(false);
-      recognitionRef.current.onend = () => setIsListening(false);
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+        if (transcriptRef.current) {
+          onResult(transcriptRef.current.trim());
+          transcriptRef.current = '';
+        }
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      };
+      recognitionRef.current.onspeechend = () => {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          recognitionRef.current.stop();
+        }, silenceDelayMs);
+      };
+      recognitionRef.current.onspeechstart = () => {
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      };
     }
     setIsListening(true);
     recognitionRef.current.lang = normalizeLang(sttLang); // always update
+    transcriptRef.current = '';
     recognitionRef.current.start();
   };
 
@@ -82,9 +110,19 @@ export function useTTS_STT({
     setSttLoading(true);
     try {
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'audio.webm');
+      formData.append('file', audioBlob, 'audio.webm');
+      formData.append('model', 'gpt-4o-mini-transcribe');
       formData.append('language', normalizeLang(sttLang));
-      const res = await axios.post(sttApi, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await axios.post(
+        'https://api.openai.com/v1/audio/transcriptions',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
+          },
+        }
+      );
       if (res.data && res.data.text) onResult(res.data.text);
     } catch (e) {
       alert('Failed to transcribe audio.');
