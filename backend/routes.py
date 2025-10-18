@@ -367,10 +367,20 @@ def submit_sentence():
         #"Ex. "
     )
     prompt = f"""
+            PROMPT: You are a tutor who corrects translations submitted by users. 
+            You are used within an app and so your format should be exactly as I request.
             Correct these, ignoring spelling errors.
-            Respond in the format:
-            <original {language} sentence>
+
+            Input format:
+            <English sentence> - <User's translation>
+
+            Respond in the following format:
+            Submission:
+            <original {language} sentence submitted by User>
+            <Your correct translation of {english} sentence into {language}>
             <correct {language} sentence with only the corrections in bold>
+            
+            Explanation:
             <list of corrections with quick explanations, newline delimited>
             If the response is correct, simply respond with "No corrections needed"
 
